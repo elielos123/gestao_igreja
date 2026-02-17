@@ -1,0 +1,55 @@
+<?php
+/**
+ * Classe de Conexão com Banco de Dados
+ * Padrão: Singleton (Garante apenas uma instância de conexão por requisição)
+ * Local: app/Config/Database.php
+ * 
+ * INSTRUÇÕES:
+ * 1. Copie este arquivo para Database.php
+ * 2. Altere as configurações abaixo com suas credenciais
+ */
+
+// Se estiver usando namespaces no futuro, descomente a linha abaixo:
+// namespace App\Config;
+
+class Database {
+    
+    // Configurações do Banco (ALTERE AQUI SE NECESSÁRIO)
+    private $host = "localhost";
+    private $db_name = "gestao_igreja"; // Nome do seu banco de dados
+    private $username = "root";         // Seu usuário do MySQL
+    private $password = "";             // Sua senha do MySQL
+    
+    // Variável estática para segurar a conexão
+    public $conn;
+
+    // Método para pegar a conexão
+    public function getConnection() {
+        $this->conn = null;
+
+        try {
+            // String de conexão (DSN)
+            // Configurado para UTF-8 para aceitar acentos e caracteres especiais
+            $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8";
+            
+            $this->conn = new PDO($dsn, $this->username, $this->password);
+            
+            // Configurações de Erro e Segurança
+            // ERRMODE_EXCEPTION: Faz o PHP parar e mostrar o erro se o SQL falhar (bom para dev)
+            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            
+            // DEFAULT_FETCH_MODE: Garante que os dados venham como array associativo por padrão
+            $this->conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+
+        } catch(PDOException $exception) {
+            // Em produção, nunca mostre o erro exato para o usuário (segurança)
+            // Mas em desenvolvimento, precisamos ver o que houve:
+            echo "<div style='color:white; background:red; padding:10px; text-align:center;'>";
+            echo "<strong>Erro Crítico de Conexão:</strong> " . $exception->getMessage();
+            echo "</div>";
+            exit; // Para a execução do script
+        }
+
+        return $this->conn;
+    }
+}

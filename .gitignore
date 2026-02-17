@@ -1,0 +1,120 @@
+# ========================================
+# .gitignore para Projeto PHP - Gestão Igreja
+# ========================================
+
+# ========================================
+# IDEs e Editores
+# ========================================
+.vscode/
+.idea/
+.antigravity/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========================================
+# Arquivos de Configuração Sensíveis
+# ========================================
+# Arquivo de configuração do banco de dados (use Database.php.example como template)
+app/Config/Database.php
+*.local.php
+.env
+.env.local
+.env.*.local
+
+# ========================================
+# Banco de Dados
+# ========================================
+# Backups SQL (exceto estrutura inicial se necessário)
+*.sql
+*.sql.gz
+*.sql.zip
+gestao_igreja_backup.sql
+
+# Arquivos de dump
+dump.sql
+backup*.sql
+
+# ========================================
+# Logs
+# ========================================
+*.log
+logs/
+*.log.*
+error.log
+access.log
+debug.log
+
+# ========================================
+# Arquivos Temporários
+# ========================================
+tmp/
+temp/
+cache/
+*.tmp
+*.cache
+
+# ========================================
+# Dependências (se usar Composer)
+# ========================================
+vendor/
+composer.lock
+composer.phar
+
+# ========================================
+# Node.js (se usar npm/yarn)
+# ========================================
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# ========================================
+# Arquivos de Sistema
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ========================================
+# Uploads e Arquivos de Usuários
+# ========================================
+# Descomente se tiver pasta de uploads que não deve ser versionada
+# uploads/
+# public/uploads/
+# storage/
+
+# ========================================
+# Documentação Gerada
+# ========================================
+docs/generated/
+phpdoc/
+
+# ========================================
+# Testes
+# ========================================
+coverage/
+.phpunit.result.cache
+
+# ========================================
+# Build e Distribuição
+# ========================================
+dist/
+build/
+*.zip
+*.tar.gz
+*.rar
+
+# ========================================
+# Arquivos Específicos do Projeto
+# ========================================
+# Adicione aqui arquivos específicos que não devem ser versionados
+MIGRACAO_DATABASE.md
