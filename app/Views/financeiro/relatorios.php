@@ -11,16 +11,15 @@
         body { background-color: var(--azul-fundo); color: var(--branco); height: 100vh; width: 100vw; display: flex; flex-direction: column; overflow: hidden; }
         
         /* CABEÇALHO TELA */
-        .header { display: flex; justify-content: space-between; align-items: center; padding: 20px 5%; height: 100px; flex-shrink: 0; position: relative; }
-        .title-main { text-transform: uppercase; font-weight: 900; font-size: 2rem; text-align: center; }
-        .logo-tela { height: 60px; width: auto; display: block; } 
+        .header { display: none !important; }
+        .container-menu { flex: 1; display: flex; justify-content: center; align-items: center; padding: 10px; }
         
         .btn-voltar { background-color: var(--azul-fundo); color: var(--branco); border: 2px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 10px 25px; text-decoration: none; font-weight: bold; color: white; }
         
         .container-menu { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
-        .grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 80%; max-width: 1000px; }
-        .btn-relatorio { background: var(--azul-fundo); border: 2px solid rgba(255,255,255,0.3); border-bottom: 8px solid #000a14; border-radius: 15px; height: 150px; color: white; font-size: 1.4rem; font-weight: bold; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .btn-relatorio:hover { background: var(--azul-claro); transform: translateY(-2px); }
+        .grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 95%; max-width: 900px; }
+        .btn-relatorio { background: var(--azul-fundo); border: 1px solid rgba(255,255,255,0.2); border-bottom: 4px solid #000a14; border-radius: 12px; height: 70px; color: white; font-size: 0.9rem; font-weight: bold; cursor: pointer; text-transform: uppercase; display: flex; align-items: center; justify-content: center; transition: all 0.2s; padding: 10px; text-align: center; line-height: 1.2; }
+        .btn-relatorio:hover { background: var(--azul-claro); transform: translateY(-2px); border-color: white; }
 
         /* DOCKS */
         .dock-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--azul-fundo); z-index: 100; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); padding: 20px; }
@@ -93,8 +92,36 @@
             .linha-superior { display: flex; justify-content: space-around; width: 100%; margin-bottom: 50px;}
             .assinatura-box { width: 250px; text-align: center; border-top: 1px solid black; padding-top: 5px; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; }
         }
+
+        /* ESTILOS ESPECÍFICOS PARA O BALANÇO MENSAL NA TELA */
+        .balanco-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 20px; border-radius: 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .balanco-table th { background: rgba(127, 219, 255, 0.1); color: #7FDBFF; padding: 15px; text-align: left; font-size: 0.9rem; text-transform: uppercase; }
+        .balanco-table td { padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 1.1rem; }
+        .balanco-table tr:last-child td { border-bottom: none; font-weight: 900; background: rgba(255,255,255,0.02); }
+        .balanco-val-pos { color: var(--verde); font-family: monospace; }
+        .balanco-val-neg { color: var(--vermelho); font-family: monospace; }
+
+        @media print {
+            .balanco-table { border: 2px solid #333 !important; color: black !important; }
+            .balanco-table th { background: #f0f0f0 !important; color: black !important; border-bottom: 2px solid #333 !important; }
+            .balanco-table td { border-bottom: 1px solid #ccc !important; color: black !important; }
+            .balanco-val-pos, .balanco-val-neg { color: black !important; }
+            .print-footer { display: block !important; position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 0.7rem; color: #666; }
+        }
         .print-header, .area-assinaturas { display: none; } 
+
+        /* AJUSTE PARA IFRAME */
+        @media screen and (min-width: 10px) {
+            body.in-iframe .header, body.in-iframe .btn-voltar { display: none !important; }
+            body.in-iframe .container-menu { padding-top: 20px; }
+        }
     </style>
+    <script>
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+            document.body.classList.add('in-iframe');
+        }
+    </script>
 </head>
 <body>
 
@@ -165,9 +192,18 @@
         </div>
         <div class="print-header">
             <img src="img/logo.png" alt="Logo" class="logo-impressao">
-            <h2>BALANÇO FINANCEIRO ANALÍTICO</h2>
+            <h1 style="color: black; margin-bottom: 5px;">BALANÇO FINANCEIRO MENSAL</h1>
+            <p style="color: black; opacity: 0.7; font-size: 0.9rem;">Relatório de Auditoria e Fechamento Mensal</p>
         </div>
         <div class="resultados-area" id="res-balanco"></div>
+        
+        <div class="area-assinaturas" style="margin-top: 60px;">
+            <div style="display: flex; justify-content: space-around; width: 100%;">
+                <div class="assinatura-box">Tesouraria</div>
+                <div class="assinatura-box">Conselho Fiscal</div>
+                <div class="assinatura-box">Pastor Presidente</div>
+            </div>
+        </div>
     </div>
 
     <div id="dock-incongruencias" class="dock-overlay">
@@ -304,10 +340,48 @@
                 const dadosBalanco = json.dados; let meses = dadosBalanco.map(d => d.mes_ref);
                 let lEnt = '', lSai = '', lSal = ''; let tEnt=0, tSai=0, tSal=0;
                 dadosBalanco.forEach(d => {
-                    lEnt += `<td>${fmtNum(d.entradas)}</td>`; lSai += `<td>${fmtNum(d.saidas)}</td>`; lSal += `<td>${fmtNum(d.saldo)}</td>`;
+                    lEnt += `<td>${fmtMoeda(d.entradas)}</td>`; 
+                    lSai += `<td>${fmtMoeda(d.saidas)}</td>`; 
+                    const saldoCls = d.saldo >= 0 ? 'balanco-val-pos' : 'balanco-val-neg';
+                    lSal += `<td class="${saldoCls}">${fmtMoeda(d.saldo)}</td>`;
                     tEnt += parseFloat(d.entradas); tSai += parseFloat(d.saidas); tSal += parseFloat(d.saldo);
                 });
-                document.getElementById('res-balanco').innerHTML = `<table class="tabela-relatorio"><thead><tr><th>MESES</th>${meses.map(m => `<th>${m}</th>`).join('')}<th>TOTAL</th></tr></thead><tbody><tr><td>ENTRADAS</td>${lEnt}<td>${fmtMoeda(tEnt)}</td></tr><tr><td>SAÍDAS</td>${lSai}<td>${fmtMoeda(tSai)}</td></tr><tr class="linha-total-final"><td>SALDO</td>${lSal}<td>${fmtMoeda(tSal)}</td></tr></tbody></table>`;
+                
+                const saldoFinalCls = tSal >= 0 ? 'balanco-val-pos' : 'balanco-val-neg';
+                
+                document.getElementById('res-balanco').innerHTML = `
+                    <div style="margin-bottom: 20px; font-size: 0.9rem; opacity: 0.7;">Gerado em: ${new Date().toLocaleString()}</div>
+                    <table class="balanco-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 200px">DESCRIÇÃO</th>
+                                ${meses.map(m => `<th>${m}</th>`).join('')}
+                                <th style="background: rgba(127, 219, 255, 0.2)">TOTAL ACUMULADO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: 700">ENTRADAS (+)</td>
+                                ${lEnt}
+                                <td style="font-weight: 900; color: var(--verde);">${fmtMoeda(tEnt)}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 700">SAÍDAS (-)</td>
+                                ${lSai}
+                                <td style="font-weight: 900; color: var(--vermelho);">${fmtMoeda(tSai)}</td>
+                            </tr>
+                            <tr style="background: rgba(255,255,255,0.05)">
+                                <td style="font-weight: 900; text-transform: uppercase;">SALDO LÍQUIDO (=)</td>
+                                ${lSal}
+                                <td class="${saldoFinalCls}" style="font-size: 1.4rem; border-left: 2px solid rgba(255,255,255,0.1)">${fmtMoeda(tSal)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 30px; font-size: 0.85rem; opacity: 0.6; line-height: 1.6;">
+                        * Este documento apresenta o resumo consolidado das movimentações financeiras no período selecionado.<br>
+                        * Registros de entradas e saídas foram conferidos conforme o sistema de gestão eclesiástica.
+                    </div>
+                `;
             }
         }
 

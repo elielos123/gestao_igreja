@@ -1,5 +1,8 @@
 <?php
-require_once dirname(__DIR__) . '/Models/FinanceiroModel.php';
+namespace App\Controllers;
+
+use App\Models\FinanceiroModel;
+use Exception;
 
 class FinanceiroController {
     

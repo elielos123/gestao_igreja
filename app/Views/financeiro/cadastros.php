@@ -76,35 +76,35 @@
 
         .grid-buttons {
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* Ajustado para 2 colunas */
-            gap: 40px;
-            width: 80%;
-            max-width: 900px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 95%;
+            max-width: 800px;
         }
 
-        /* --- ESTILO BASE DO BOTÃO (PADRÃO DASHBOARD) --- */
         .btn-cad {
             background-color: var(--azul-fundo);
             color: var(--branco);
             border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 20px;
-            height: 240px;
+            border-radius: 12px;
+            height: 120px;
             
             box-shadow: 
-                0px 8px 0px 0px var(--azul-sombra), 
-                0px 15px 30px rgba(0,0,0,0.4); 
+                0px 5px 0px 0px var(--azul-sombra), 
+                0px 10px 20px rgba(0,0,0,0.3); 
             
             text-decoration: none;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             text-align: center;
             
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 15px;
+            font-size: 0.85rem;
             
             cursor: pointer;
             transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -119,9 +119,9 @@
 
         .btn-cad svg {
             fill: var(--branco);
-            width: 80px;
-            height: 80px;
-            margin-bottom: 25px;
+            width: 40px;
+            height: 40px;
+            margin-bottom: 10px;
             transition: fill 0.1s;
         }
 
@@ -148,7 +148,19 @@
             }
             .header h1 { font-size: 1.8rem; }
         }
+
+        /* AJUSTE PARA IFRAME */
+        @media screen and (min-width: 10px) {
+            body.in-iframe .header, body.in-iframe .btn-voltar { display: none !important; }
+            body.in-iframe .container-menu { padding-top: 20px; }
+        }
     </style>
+    <script>
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+            document.body.classList.add('in-iframe');
+        }
+    </script>
 </head>
 <body>
 

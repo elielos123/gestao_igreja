@@ -1,5 +1,8 @@
 <?php
-require_once dirname(__DIR__) . '/Config/Database.php';
+namespace App\Models;
+
+use App\Config\Database;
+use PDO;
 
 class FinanceiroModel {
     private $conn;

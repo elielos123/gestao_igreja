@@ -36,14 +36,7 @@
 
         /* --- HEADER --- */
         .header {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 30px 5%;
-            width: 100%;
-            position: relative;
-            z-index: 10;
+            display: none;
         }
 
         .header h1 {
@@ -80,12 +73,13 @@
         }
 
         .form-container {
-            width: 85%;
-            max-width: 1400px;
+            width: 95%;
+            max-width: 1200px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 25px;
+            gap: 12px;
+            padding: 10px 0;
         }
 
         .form-row {
@@ -102,20 +96,20 @@
         }
 
         .input-3d {
-            background-color: var(--azul-fundo);
+            background-color: rgba(255,255,255,0.02);
             color: var(--vermelho-erro);
-            border: 2px solid rgba(255,65,54,0.4);
-            border-bottom: 6px solid var(--azul-sombra);
-            border-radius: 12px;
-            padding: 25px;
-            font-size: 1.6rem;
+            border: 1px solid rgba(255,65,54,0.3);
+            border-bottom: 3px solid var(--azul-sombra);
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 0.95rem;
             font-weight: 500;
             transition: all 0.1s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             width: 100%;
         }
         
-        .input-3d::placeholder { color: rgba(255,65,54,0.3); font-size: 1.6rem; }
+        .input-3d::placeholder { color: rgba(255,65,54,0.3); font-size: 0.9rem; }
         .input-3d:focus {
             background-color: var(--branco);
             color: var(--vermelho-erro);
@@ -150,9 +144,9 @@
         }
 
         .suggestion-item {
-            padding: 15px 25px;
+            padding: 10px 20px;
             color: var(--branco);
-            font-size: 1.2rem;
+            font-size: 1rem;
             cursor: pointer;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             transition: background 0.2s;
@@ -219,10 +213,10 @@
         
         .h-info { display: flex; gap: 15px; align-items: center; width: 100%; }
         .h-data { flex: 1; font-size: 0.85rem; opacity: 0.7; }
-        .h-recebedor { flex: 3; font-weight: bold; font-size: 1.1rem; }
-        .h-desc { flex: 2; font-size: 0.9rem; opacity: 0.8; }
-        .h-parcela { flex: 0.8; text-align: center; color: var(--amarelo-alerta); font-weight: bold; }
-        .h-valor { flex: 1.5; text-align: right; color: var(--vermelho-erro); font-weight: bold; font-size: 1.3rem; font-family: monospace; }
+        .h-recevedor { flex: 3; font-weight: bold; font-size: 0.9rem; }
+        .h-desc { flex: 2; font-size: 0.8rem; opacity: 0.8; }
+        .h-parcela { flex: 0.8; text-align: center; color: var(--amarelo-alerta); font-weight: bold; font-size: 0.8rem; }
+        .h-valor { flex: 1.5; text-align: right; color: var(--vermelho-erro); font-weight: bold; font-size: 1rem; font-family: monospace; }
         
         .btn-action { cursor: pointer; text-decoration: underline; font-size: 0.9rem; margin-left: 15px; color: var(--amarelo-alerta); transition: 0.2s; }
         .btn-action:hover { opacity: 0.7; }
@@ -244,7 +238,19 @@
             z-index: 2000;
             border: 5px solid white;
         }
+
+        /* AJUSTE PARA IFRAME */
+        @media screen and (min-width: 10px) {
+            body.in-iframe .header, body.in-iframe .btn-voltar { display: none !important; }
+            body.in-iframe .form-wrapper { padding-top: 20px; }
+        }
     </style>
+    <script>
+        if (window.self !== window.top) {
+            document.documentElement.classList.add('in-iframe');
+            document.body.classList.add('in-iframe');
+        }
+    </script>
 </head>
 <body>
 

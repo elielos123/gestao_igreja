@@ -1,0 +1,20 @@
+{
+    "name": "elielos123/gestao-igreja",
+    "description": "Sistema de Gestão de Igreja",
+    "type": "project",
+    "require": {
+        "php": ">=8.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "elielos123"
+        }
+    ],
+    "minimum-stability": "stable"
+}

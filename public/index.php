@@ -1,8 +1,21 @@
 <?php
 /**
- * Front Controller - Roteador Robusto
+ * Front Controller - Roteador Modernizado
  * Localização: gestao_igreja/public/index.php
  */
+
+header('Content-Type: text/html; charset=utf-8');
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
+use Dotenv\Dotenv;
+use App\Controllers\FinanceiroController;
+use App\Controllers\LoginController;
+use App\Controllers\MembrosController;
+
+// Carrega as variáveis de ambiente
+$dotenv = Dotenv::createImmutable(dirname(__DIR__));
+$dotenv->load();
 
 $ds = DIRECTORY_SEPARATOR;
 $baseAppPath = dirname(__DIR__) . $ds . 'app';
@@ -13,6 +26,21 @@ $route = str_replace(['.', '/', '\\'], '', $route);
 
 $viewPath = "";
 
+// --- ROTAS PÚBLICAS ---
+if ($route === 'login') {
+    (new LoginController())->index();
+    exit;
+}
+
+if ($route === 'autenticar') {
+    (new LoginController())->autenticar();
+    exit;
+}
+
+// --- PROTEÇÃO DE ROTAS (Precisa estar logado para o resto) ---
+LoginController::checkAuth();
+
+// Instancia controladores sob demanda
 switch ($route) {
     // --- PÁGINAS GERAIS ---
     case 'dashboard':
@@ -20,7 +48,19 @@ switch ($route) {
         break;
 
     case 'membros':
-        $viewPath = $baseAppPath . $ds . 'Views' . $ds . 'membros.php';
+        (new MembrosController())->index();
+        break;
+
+    case 'membros_salvar':
+        (new MembrosController())->salvar();
+        break;
+
+    case 'membros_excluir':
+        (new MembrosController())->excluir();
+        break;
+
+    case 'membros_resolver_conflito':
+        (new MembrosController())->resolverConflito();
         break;
 
     case 'financeiro':
@@ -29,105 +69,104 @@ switch ($route) {
         
     // --- FINANCEIRO: ENTRADAS ---
     case 'financeiro_entradas':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->indexEntradas(); 
-        $viewPath = null; 
+        (new FinanceiroController())->indexEntradas(); 
         break;
 
     case 'financeiro_autocomplete':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->autocomplete();
-        $viewPath = null;
+        (new FinanceiroController())->autocomplete();
         break;
 
     case 'financeiro_salvar_entrada':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->salvarEntrada();
-        $viewPath = null; 
+        (new FinanceiroController())->salvarEntrada();
         break;
 
     case 'financeiro_excluir_entrada':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->excluirEntrada();
-        $viewPath = null;
+        (new FinanceiroController())->excluirEntrada();
         break;
 
     // --- FINANCEIRO: SAÍDAS ---
     case 'financeiro_saidas':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->indexSaidas(); 
-        $viewPath = null;
+        (new FinanceiroController())->indexSaidas(); 
         break;
 
     case 'financeiro_salvar_saida':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->salvarSaida();
-        $viewPath = null;
+        (new FinanceiroController())->salvarSaida();
         break;
 
     case 'financeiro_excluir_saida':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->excluirSaida();
-        $viewPath = null;
+        (new FinanceiroController())->excluirSaida();
         break;
 
     // --- FINANCEIRO: RELATÓRIOS, EDIÇÃO E CADASTROS ---
     case 'financeiro_relatorios':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->indexRelatorios();
-        $viewPath = null;
+        (new FinanceiroController())->indexRelatorios();
         break;
 
     case 'financeiro_cadastros':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->indexCadastros();
-        $viewPath = null;
+        (new FinanceiroController())->indexCadastros();
         break;
 
     case 'api_relatorios':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->gerarRelatorio();
-        $viewPath = null;
+        (new FinanceiroController())->gerarRelatorio();
         break;
 
     case 'financeiro_buscar_edicao':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->buscarDadosEdicao();
-        $viewPath = null;
+        (new FinanceiroController())->buscarDadosEdicao();
         break;
 
     case 'financeiro_salvar_edicao':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->salvarEdicao();
-        $viewPath = null;
+        (new FinanceiroController())->salvarEdicao();
         break;
 
     case 'financeiro_lista_congregacoes':
-        require_once $baseAppPath . $ds . 'Controllers' . $ds . 'FinanceiroController.php';
-        $controller = new FinanceiroController();
-        $controller->listarCongregacoes(); 
-        $viewPath = null; 
+        (new FinanceiroController())->listarCongregacoes(); 
         break;
 
     // --- SISTEMA ---
     case 'ajustes':
-        $viewPath = $baseAppPath . $ds . 'Views' . $ds . 'ajustes.php';
+        (new MembrosController())->indexAjustes();
+        break;
+
+    case 'ajustes_salvar':
+        (new MembrosController())->salvarAjuste();
+        break;
+
+    case 'ajustes_excluir':
+        (new MembrosController())->excluirAjuste();
+        break;
+
+    case 'usuarios':
+        (new \App\Controllers\UsuarioController())->index();
+        break;
+
+    case 'usuarios_papeis':
+        (new \App\Controllers\UsuarioController())->papeis();
+        break;
+
+    case 'usuarios_salvar_papeis':
+        (new \App\Controllers\UsuarioController())->salvarUsuarioPapeis();
+        break;
+
+    case 'usuarios_salvar_papel_permissoes':
+        (new \App\Controllers\UsuarioController())->salvarPapelPermissoes();
+        break;
+
+    case 'usuarios_criar_papel':
+        (new \App\Controllers\UsuarioController())->criarPapel();
+        break;
+
+    case 'usuarios_atualizar_papel':
+        (new \App\Controllers\UsuarioController())->atualizarPapel();
+        break;
+
+    case 'usuarios_excluir_papel':
+        (new \App\Controllers\UsuarioController())->excluirPapel();
         break;
 
     case 'logout':
-        echo "Saindo...";
+        session_start();
+        session_destroy();
+        header("Location: index.php?url=login");
         exit;
         break;
 
@@ -136,7 +175,7 @@ switch ($route) {
         break;
 }
 
-// Renderização final
+// Renderização final para rotas que definem $viewPath
 if ($viewPath && file_exists($viewPath)) {
     include_once($viewPath);
 } elseif ($viewPath) {

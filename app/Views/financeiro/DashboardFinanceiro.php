@@ -5,225 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão Igreja - Financeiro</title>
     <style>
-        /* --- DESIGN SYSTEM (Mesmo do Dashboard Principal) --- */
         :root {
             --azul-fundo: #001f3f;
             --azul-sombra: #000a14;
             --branco: #ffffff;
+            --verde-sucesso: #2ecc71;
+            --azul-claro: #3498db;
+            --vermelho-erro: #e74c3c;
+            --cinza-texto: #666;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--azul-fundo); color: var(--branco); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
 
-        body {
-            background-color: var(--azul-fundo);
-            height: 100vh;
-            width: 100vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-        }
+        .header { padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2); }
+        .logo-pequena { height: 35px; }
+        .btn-voltar { color: var(--branco); text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: 600; opacity: 0.8; transition: 0.2s; font-size: 0.9rem; }
+        .btn-voltar:hover { opacity: 1; }
 
-        .container {
-            width: 100%;
-            height: 100%;
-            max-width: 1000px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-evenly;
-            align-items: center;
-            padding: 20px;
-        }
+        .container { flex: 1; padding: 15px; max-width: 1400px; margin: 0 auto; width: 100%; }
 
-        /* --- BOTÕES (CSS SÓLIDO SEM BORDAS BRANCAS) --- */
-        .btn {
-            background-color: var(--azul-fundo);
-            color: var(--branco);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 14px;
-            
-            /* Efeito 3D Escuro */
-            box-shadow: 
-                0px 6px 0px 0px var(--azul-sombra), 
-                0px 8px 15px rgba(0,0,0,0.3); 
-            
-            text-decoration: none;
-            font-weight: 700;
+        /* --- SUB MENU --- */
+        .sub-menu { display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.1); padding: 5px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); overflow-x: auto; }
+        .menu-item { 
+            padding: 8px 18px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            color: rgba(255,255,255,0.4); 
+            transition: all 0.3s;
             text-transform: uppercase;
+            font-size: 0.75rem;
             letter-spacing: 0.5px;
-            text-align: center;
-            
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            
-            cursor: pointer;
-            position: relative;
-            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-            user-select: none;
+            white-space: nowrap;
         }
+        .menu-item.active { background: var(--azul-claro); color: white; box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
+        .menu-item:hover:not(.active) { color: white; background: rgba(255,255,255,0.05); }
 
-        /* Hover Desktop */
-        .btn:hover {
-            transform: translateY(-2px);
-            border-color: rgba(255,255,255,0.3);
-        }
+        .section-content { display: none; animation: fadeIn 0.4s ease; }
+        .section-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CLIQUE (INVERSÃO DE CORES) --- */
-        .btn:active, .btn-pressed {
-            transform: translateY(6px);
-            box-shadow: 0px 0px 0px 0px var(--azul-sombra); /* Sombra some */
-            background-color: var(--branco) !important;
-            color: var(--azul-fundo) !important;
-            border-color: var(--branco) !important;
-        }
-
-        .btn:active svg, .btn-pressed svg {
-            fill: var(--azul-fundo) !important;
-        }
-
-        /* --- GRID CENTRAL (4 ITENS) --- */
-        .grid-financeiro {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr 1fr; /* 4 colunas no desktop */
-            gap: 20px;
-            width: 100%;
-            max-width: 900px;
-        }
-
-        /* Botões H1 (Centrais) */
-        .btn-h1 {
-            height: 160px; /* Altura equilibrada */
-            font-size: 1rem;
-            gap: 12px;
-        }
-
-        /* Botões H2 (Topo e Base) */
-        .btn-h2 {
-            width: 240px;
-            height: 50px;
-            font-size: 0.9rem;
-            box-shadow: 0px 4px 0px 0px var(--azul-sombra);
-        }
+        /* --- CARD --- */
+        .card { background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(5px); border-radius: 15px; padding: 15px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         
-        .btn-h2:active {
-            transform: translateY(4px);
-        }
+        .iframe-container { width: 100%; height: 75vh; border: none; border-radius: 15px; overflow: hidden; background: rgba(0,0,0,0.1); }
+        iframe { width: 100%; height: 100%; border: none; }
 
-        /* Ícones */
-        svg {
-            fill: var(--branco);
-            width: 45px;
-            height: 45px;
-            transition: fill 0.1s;
-            pointer-events: none;
-        }
-
-        /* --- RESPONSIVIDADE MOBILE (VERTICAL & CLEAN) --- */
-        @media (max-width: 900px) {
-            .grid-financeiro {
-                display: flex; /* Muda para Flexbox */
-                flex-direction: column; /* Pilha Vertical */
-                gap: 15px;
-                width: 100%;
-                max-width: 300px; /* Limita largura para não estourar */
-            }
-
-            .btn-h1 {
-                width: 100%;
-                height: 80px; /* Botões mais baixos (retangulares horizontais) */
-                flex-direction: row; /* Ícone ao lado do texto */
-                justify-content: start;
-                padding-left: 30px;
-                font-size: 1rem;
-            }
-
-            .btn-h1 svg {
-                width: 30px;
-                height: 30px;
-                margin-bottom: 0;
-                margin-right: 15px;
-            }
-
-            /* No mobile, o grid vira lista. Ajuste do texto */
-            .btn-h1 span {
-                text-align: left;
-            }
-
-            .container {
-                padding: 30px 15px;
-            }
-        }
     </style>
 </head>
 <body>
 
+    <header class="header">
+        <a href="dashboard" class="btn-voltar">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            VOLTAR AO PAINEL
+        </a>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <?php if (\App\Helpers\Acl::canView('manage_users')): ?>
+            <a href="index.php?url=usuarios" style="color: var(--verde-sucesso); text-decoration: none; font-size: 0.8rem; font-weight: 700;">GERENCIAR USUÁRIOS</a>
+            <?php endif; ?>
+            <img src="img/logo.png" alt="Logo" class="logo-pequena">
+        </div>
+    </header>
+
     <div class="container">
         
-        <a href="dashboard" class="btn btn-h2">
-            VOLTAR AO MENU
-        </a>
-
-        <div class="grid-financeiro">
-            
-            <a href="financeiro_entradas" class="btn btn-h1">
-                <svg viewBox="0 0 24 24">
-                    <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h18v8z"/>
-                    <path d="M12 17l-4-4h3V9h2v4h3l-4 4z"/>
-                </svg>
-                <span>ENTRADAS</span>
-            </a>
-
-            <a href="financeiro_saidas" class="btn btn-h1">
-                <svg viewBox="0 0 24 24">
-                    <path d="M21 6H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H3V8h18v8z"/>
-                    <path d="M12 7l-4 4h3v4h2v-4h3l-4-4z"/>
-                </svg>
-                <span>SAÍDAS</span>
-            </a>
-
-            <a href="financeiro_bi" class="btn btn-h1">
-                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-                <span>BI & DADOS</span>
-            </a>
-
-            <a href="financeiro_relatorios" class="btn btn-h1">
-                <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
-                <span>RELATÓRIOS</span>
-            </a>
-
+        <!-- NAVEGAÇÃO INTERNA -->
+        <div class="sub-menu">
+            <div class="menu-item active" data-url="financeiro_entradas">Entradas</div>
+            <div class="menu-item" data-url="financeiro_saidas">Saídas</div>
+            <div class="menu-item" data-url="financeiro_relatorios">Pesquisas & Relatórios</div>
+            <div class="menu-item" data-url="financeiro_cadastros">Importações & Cadastros</div>
         </div>
 
-        <a href="financeiro_cadastros" class="btn btn-h2">
-            CADASTRAMENTOS
-        </a>
+        <!-- CONTEÚDO DINÂMICO -->
+        <div class="card">
+            <div class="iframe-container">
+                <iframe id="financeiro-iframe" src="index.php?url=financeiro_entradas"></iframe>
+            </div>
+        </div>
 
     </div>
 
     <script>
-        // Script simples para feedback visual de clique (Inversão + 3D)
-        const botoes = document.querySelectorAll('.btn');
-        botoes.forEach(btn => {
-            btn.addEventListener('touchstart', () => btn.classList.add('btn-pressed'));
-            btn.addEventListener('touchend', () => btn.classList.remove('btn-pressed'));
-            btn.addEventListener('click', function(e) {
-                const href = this.getAttribute('href');
-                if (href && href !== '#') {
-                    e.preventDefault();
-                    this.classList.add('btn-pressed');
-                    setTimeout(() => {
-                        window.location.href = href;
-                    }, 150);
-                }
-            });
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.onclick = function() {
+                // UI
+                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Iframe
+                const url = this.getAttribute('data-url');
+                document.getElementById('financeiro-iframe').src = 'index.php?url=' + url;
+            };
         });
+
+        // Opção para abrir aba específica via URL se necessário
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        if(tab) {
+            const target = document.querySelector(`.menu-item[data-url*="${tab}"]`);
+            if(target) target.click();
+        }
     </script>
 </body>
 </html>
