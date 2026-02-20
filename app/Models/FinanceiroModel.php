@@ -96,11 +96,13 @@ class FinanceiroModel {
 
     public function buscarSugestoes($termo, $campo) {
         if ($campo === 'nome') {
-            // CORREÇÃO: Unifica nomes de membros e recebedores para o autocomplete global
-            $sql = "SELECT DISTINCT nome as label FROM entradas WHERE nome LIKE :termo 
+            // CORREÇÃO: Unifica nomes de membros (com congregação) e recebedores para o autocomplete global
+            $sql = "SELECT DISTINCT nome as label, congregacao FROM membros WHERE nome LIKE :termo 
                     UNION 
-                    SELECT DISTINCT recebedor as label FROM saidas WHERE recebedor LIKE :termo 
-                    LIMIT 10";
+                    SELECT DISTINCT nome as label, congregacao FROM entradas WHERE nome LIKE :termo 
+                    UNION 
+                    SELECT DISTINCT recebedor as label, '' as congregacao FROM saidas WHERE recebedor LIKE :termo 
+                    LIMIT 15";
         } else {
             // CORREÇÃO: Busca tipos de entrada ou saída conforme o termo digitado
             $sql = "SELECT DISTINCT $campo as label FROM entradas WHERE $campo LIKE :termo 
@@ -114,10 +116,17 @@ class FinanceiroModel {
     }
 
     public function pesquisarRelatorio($inicio, $fim, $nome, $tipo, $ordem, $congregacao) {
-        $sqlEnt = "SELECT id, 'Entrada' as origem, nome as principal, Data as data_movimento, valor, congregacao as info_extra, tipo as categoria FROM entradas WHERE DATE(Data) BETWEEN :inicio AND :fim";
-        $sqlSai = "SELECT id, 'Saída' as origem, recebedor as principal, data as data_movimento, valor, descricao as info_extra, tipo_saida as categoria FROM saidas WHERE DATE(data) BETWEEN :inicio AND :fim";
+        $sqlEnt = "SELECT id, 'Entrada' as origem, nome as principal, Data as data_movimento, valor, congregacao as info_extra, tipo as categoria FROM entradas WHERE 1=1";
+        $sqlSai = "SELECT id, 'Saída' as origem, recebedor as principal, data as data_movimento, valor, descricao as info_extra, tipo_saida as categoria FROM saidas WHERE 1=1";
         
-        $params = [':inicio' => $inicio, ':fim' => $fim];
+        $params = [];
+        if ($inicio && $fim) {
+            $sqlEnt .= " AND DATE(Data) BETWEEN :inicio AND :fim";
+            $sqlSai .= " AND DATE(data) BETWEEN :inicio AND :fim";
+            $params[':inicio'] = $inicio;
+            $params[':fim'] = $fim;
+        }
+
         if ($nome) { 
             $sqlEnt .= " AND nome LIKE :nome"; 
             $sqlSai .= " AND recebedor LIKE :nome"; 

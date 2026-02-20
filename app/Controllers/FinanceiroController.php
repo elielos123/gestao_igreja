@@ -26,9 +26,16 @@ class FinanceiroController {
         try {
             $termo = $_GET['termo'] ?? '';
             $campo = $_GET['campo'] ?? 'nome';
-            // Ajuste: Retorna um array simples de strings para garantir compatibilidade com o frontend de autocomplete
+            
             $sugestoes = $this->model->buscarSugestoes($termo, $campo);
-            echo json_encode(array_column($sugestoes, 'label'));
+            
+            if ($campo === 'nome') {
+                // Retorna o objeto completo (label e congregacao)
+                echo json_encode($sugestoes);
+            } else {
+                // Retorna apenas a lista de strings para compatibilidade
+                echo json_encode(array_column($sugestoes, 'label'));
+            }
         } catch (Exception $e) { echo json_encode([]); }
     }
 

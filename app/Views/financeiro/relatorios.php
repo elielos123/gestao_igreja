@@ -267,7 +267,20 @@
                 }
             } catch(e) {}
         }
-        document.addEventListener('DOMContentLoaded', carregarCongregacoes);
+        // FUNÇÃO PARA DEFINIR DATAS PADRÃO (INÍCIO E FIM DO ANO ATUAL)
+        function definirDatasPadrao() {
+            const ano = new Date().getFullYear();
+            const inicio = `${ano}-01-01`;
+            const fim = `${ano}-12-31`;
+            
+            ['p-inicio', 'd-inicio', 'b-inicio'].forEach(id => document.getElementById(id).value = inicio);
+            ['p-fim', 'd-fim', 'b-fim'].forEach(id => document.getElementById(id).value = fim);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarCongregacoes();
+            definirDatasPadrao();
+        });
 
         // FUNÇÃO PARA ATUALIZAR OS RESULTADOS SEM RECARREGAR A PÁGINA
         function atualizarResultados() {
