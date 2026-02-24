@@ -107,7 +107,17 @@
             .balanco-table td { border-bottom: 1px solid #ccc !important; color: black !important; }
             .balanco-val-pos, .balanco-val-neg { color: black !important; }
             .print-footer { display: block !important; position: fixed; bottom: 0; width: 100%; text-align: center; font-size: 0.7rem; color: #666; }
+
+            /* ── RELATÓRIO SIMPLIFICADO: print-only cleanup ── */
+            /* Oculta barra de progresso, mantém só o % em texto */
+            #res-simplificado .tabela-relatorio td div { display: none !important; }
+            /* Mantém o span do percentual visível como texto simples */
+            #res-simplificado .tabela-relatorio td span { display: inline !important; font-size: 9pt !important; color: #333 !important; }
+            /* Oculta coluna # (1ª coluna do thead e tbody) */
+            #res-simplificado .tabela-relatorio thead tr th:first-child,
+            #res-simplificado .tabela-relatorio tbody tr td:first-child { display: none !important; }
         }
+
         .print-header, .area-assinaturas { display: none; } 
 
         /* AJUSTE PARA IFRAME */
@@ -135,11 +145,12 @@
     </div>
 
     <div class="container-menu">
-        <div class="grid-buttons">
+        <div class="grid-buttons" style="grid-template-columns:1fr 1fr;">
             <button class="btn-relatorio" onclick="abrirDock('pesquisa')">PESQUISA</button>
             <button class="btn-relatorio" onclick="abrirDock('detalhada')">VISUALIZAÇÃO<br>DETALHADA</button>
             <button class="btn-relatorio" onclick="abrirDock('balanco')">BALANÇO<br>MENSAL (AUDITORIA)</button>
             <button class="btn-relatorio" onclick="abrirDock('incongruencias')">BUSCA DE<br>INCONGRUÊNCIAS</button>
+            <button class="btn-relatorio" onclick="abrirDock('simplificado')" style="grid-column:1/-1;background:rgba(46,204,64,.12);border-color:rgba(46,204,64,.4);color:#2ECC40">📊 RELATÓRIO SIMPLIFICADO<br><span style="font-size:.75em;font-weight:normal;opacity:.8">Totais por congregação · maior para menor</span></button>
         </div>
     </div>
 
@@ -212,6 +223,35 @@
             <button class="btn-visualizar" onclick="executarIncongruencias()">INICIAR VARREDURA DO SISTEMA</button>
         </div>
         <div class="resultados-area" id="res-incongruencias"></div>
+    </div>
+
+    <!-- DOCK: RELATÓRIO SIMPLIFICADO -->
+    <div id="dock-simplificado" class="dock-overlay">
+        <div class="dock-header" onclick="fecharDock('simplificado')"><h2>RELATÓRIO SIMPLIFICADO</h2><span>(Fechar)</span></div>
+        <div class="filtros-container">
+            <!-- TAG-CHIP MULTI CONGREGATION AUTOCOMPLETE -->
+            <div style="position:relative;flex:1;max-width:480px">
+                <label style="font-size:.75rem;color:rgba(255,255,255,.5);display:block;margin-bottom:4px">Congregações (deixe vazio = todas)</label>
+                <div id="s-chips" onclick="document.getElementById('s-cong-input').focus()" style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:8px;min-height:52px;cursor:text">
+                    <input id="s-cong-input" type="text" placeholder="Digite o nome..." autocomplete="off"
+                        style="background:transparent;border:none;color:white;outline:none;font-size:.9rem;flex:1;min-width:120px"
+                        oninput="filtrarSugestoesCong(this.value)"
+                        onkeydown="handleChipKey(event)">
+                </div>
+                <div id="s-cong-sugestoes" style="display:none;position:absolute;top:100%;left:0;right:0;background:#002952;border:1px solid rgba(255,255,255,.2);border-radius:8px;max-height:200px;overflow-y:auto;z-index:300;"></div>
+            </div>
+            <input type="date" id="s-inicio" class="input-filtro">
+            <input type="date" id="s-fim" class="input-filtro">
+            <button class="btn-visualizar" onclick="executarSimplificado()">GERAR</button>
+            <button class="btn-imprimir" onclick="window.print()">IMPRIMIR</button>
+            <button class="btn-imprimir" style="background:#27ae60" onclick="exportarSimplificadoTxt()">⬇ TXT</button>
+        </div>
+        <div class="print-header">
+            <img src="img/logo.png" alt="Logo" class="logo-impressao">
+            <h2>RELATÓRIO SIMPLIFICADO — TOTAIS POR CONGREGAÇÃO</h2>
+            <p id="simpl-periodo-texto">Relatório Financeiro</p>
+        </div>
+        <div class="resultados-area" id="res-simplificado"></div>
     </div>
 
     <div id="modal-edit" class="modal-edit-overlay">
@@ -299,12 +339,46 @@
 
         function renderizarTabela(dados, div) {
             if(!dados.length) { div.innerHTML = "Sem dados."; return; }
+            // Build congregation totals
+            const totCong = {};
+            let totalEntradas = 0, totalSaidas = 0;
+            dados.forEach(d => {
+                const ori = d.origem || (d.recebedor ? 'Saída' : 'Entrada');
+                const label = ori === 'Entrada' ? (d.congregacao || d.info_extra || 'Sem Congregação') : 'SAÍDAS / DESPESAS';
+                if(!totCong[label]) totCong[label] = { entradas: 0, saidas: 0 };
+                const v = parseFloat(d.valor);
+                if(ori === 'Entrada') { totCong[label].entradas += v; totalEntradas += v; }
+                else { totCong[label].saidas += v; totalSaidas += v; }
+            });
+
+            // Summary section by congregation
+            const congKeys = Object.keys(totCong).sort();
+            let resumo = `<table class="tabela-relatorio" style="margin-bottom:20px">
+                <thead><tr><th>Congregação</th><th style='text-align:right;color:var(--verde)'>Entradas</th><th style='text-align:right;color:var(--vermelho)'>Saídas</th><th style='text-align:right'>Saldo</th></tr></thead><tbody>`;
+            congKeys.forEach(cong => {
+                const saldo = totCong[cong].entradas - totCong[cong].saidas;
+                resumo += `<tr class="grupo-subtotal" style='background:rgba(0,0,0,0.2)'>
+                    <td style='text-align:left'>${cong}</td>
+                    <td class='valor-entrada' style='text-align:right'>${fmtMoeda(totCong[cong].entradas)}</td>
+                    <td class='valor-saida' style='text-align:right'>${fmtMoeda(totCong[cong].saidas)}</td>
+                    <td class='${saldo>=0?"valor-entrada":"valor-saida"}' style='text-align:right;font-weight:bold'>${fmtMoeda(saldo)}</td>
+                </tr>`;
+            });
+            const saldoGeral = totalEntradas - totalSaidas;
+            resumo += `<tr class="linha-total-final">
+                <td style='text-align:left'>TOTAL GERAL</td>
+                <td>${fmtMoeda(totalEntradas)}</td>
+                <td>${fmtMoeda(totalSaidas)}</td>
+                <td>${fmtMoeda(saldoGeral)}</td>
+            </tr></tbody></table>`;
+
+            // Detail table
             let h = `<table class="tabela-relatorio"><thead><tr><th>Data</th><th>Nome</th><th>Tipo</th><th>Valor</th><th class="btn-acao-header">Ações</th></tr></thead><tbody>`;
             dados.forEach(d => {
                 const ori = d.origem || (d.recebedor ? 'Saída' : 'Entrada');
                 h += `<tr><td>${new Date(d.data_movimento + "T12:00:00").toLocaleDateString()}</td><td>${d.principal || d.nome}</td><td>${d.categoria}</td><td class="${ori==='Entrada'?'valor-entrada':'valor-saida'}">${fmtMoeda(d.valor)}</td><td><button class="btn-acao btn-edit" onclick="prepararEdicao(${d.id}, '${ori}')">Editar</button><button class="btn-acao btn-del" onclick="excluirRegistro(${d.id}, '${ori}')">Excluir</button></td></tr>`;
             });
-            div.innerHTML = h + '</tbody></table>';
+            div.innerHTML = resumo + h + '</tbody></table>';
         }
 
         async function executarDetalhada() {
@@ -317,19 +391,50 @@
 
         function renderizarAgrupado(dados, div) {
             if(!dados.length) { div.innerHTML = 'Nenhum dado.'; return; }
-            const estrutura = {}; let totalGeral = 0;
+            const estrutura = {};
+            let totalEntradas = 0, totalSaidas = 0;
             dados.forEach(d => {
                 let cong = (d.origem === 'Saída') ? 'DESPESAS / SAÍDAS' : (d.congregacao || 'GERAL');
                 const dataObj = new Date(d.data_movimento + "T12:00:00");
                 const mesRef = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
-                if(!estrutura[cong]) estrutura[cong] = { meses: {}, totalCong: 0 };
+                if(!estrutura[cong]) estrutura[cong] = { meses: {}, totalEntradas: 0, totalSaidas: 0 };
                 if(!estrutura[cong].meses[mesRef]) estrutura[cong].meses[mesRef] = { itens: [], totalMes: 0 };
-                estrutura[cong].meses[mesRef].itens.push(d); let v = parseFloat(d.valor);
-                estrutura[cong].meses[mesRef].totalMes += v; estrutura[cong].totalCong += v;
-                if(d.origem !== 'Saída') totalGeral += v;
+                estrutura[cong].meses[mesRef].itens.push(d);
+                const v = parseFloat(d.valor);
+                estrutura[cong].meses[mesRef].totalMes += v;
+                if(d.origem === 'Saída') {
+                    estrutura[cong].totalSaidas += v;
+                    totalSaidas += v;
+                } else {
+                    estrutura[cong].totalEntradas += v;
+                    totalEntradas += v;
+                }
             });
+
+            // Summary table per congregation
+            const congKeys = Object.keys(estrutura).sort();
+            let resumo = `<table class="tabela-relatorio" style="margin-bottom:20px">
+                <thead><tr><th>Congregação</th><th style='text-align:right;color:var(--verde)'>Entradas</th><th style='text-align:right;color:var(--vermelho)'>Saídas</th><th style='text-align:right'>Saldo</th></tr></thead><tbody>`;
+            congKeys.forEach(cong => {
+                const saldo = estrutura[cong].totalEntradas - estrutura[cong].totalSaidas;
+                resumo += `<tr class="grupo-subtotal" style='background:rgba(0,0,0,0.2)'>
+                    <td style='text-align:left'>${cong}</td>
+                    <td class='valor-entrada' style='text-align:right'>${fmtMoeda(estrutura[cong].totalEntradas)}</td>
+                    <td class='valor-saida' style='text-align:right'>${fmtMoeda(estrutura[cong].totalSaidas)}</td>
+                    <td class='${saldo>=0?"valor-entrada":"valor-saida"}' style='text-align:right;font-weight:bold'>${fmtMoeda(saldo)}</td>
+                </tr>`;
+            });
+            const saldoGeral = totalEntradas - totalSaidas;
+            resumo += `<tr class="linha-total-final">
+                <td style='text-align:left'>TOTAL GERAL</td>
+                <td>${fmtMoeda(totalEntradas)}</td>
+                <td>${fmtMoeda(totalSaidas)}</td>
+                <td>${fmtMoeda(saldoGeral)}</td>
+            </tr></tbody></table>`;
+
+            // Detail table grouped by congregation and month
             let h = `<table class="tabela-relatorio"><thead><tr><th>Data</th><th>Nome/Descrição</th><th>Tipo</th><th style="text-align:right">Valor</th><th class="btn-acao-header">Ações</th></tr></thead><tbody>`;
-            Object.keys(estrutura).sort().forEach(cong => {
+            congKeys.forEach(cong => {
                 h += `<tr class="grupo-header"><td colspan="5">${cong}</td></tr>`;
                 Object.keys(estrutura[cong].meses).forEach(mes => {
                     h += `<tr class="grupo-mes"><td colspan="5">${mes}</td></tr>`;
@@ -337,12 +442,25 @@
                         const ori = i.origem || (i.recebedor ? 'Saída' : 'Entrada');
                         h += `<tr><td>${new Date(i.data_movimento + "T12:00:00").toLocaleDateString()}</td><td>${i.principal || i.nome}</td><td>${i.categoria}</td><td style="text-align:right" class="${i.origem==='Saída'?'valor-saida':'valor-entrada'}">${fmtMoeda(i.valor)}</td><td><button class="btn-acao btn-edit" onclick="prepararEdicao(${i.id}, '${ori}')">Editar</button><button class="btn-acao btn-del" onclick="excluirRegistro(${i.id}, '${ori}')">Excluir</button></td></tr>`;
                     });
-                    h += `<tr class="grupo-subtotal"><td colspan="3">SUBTOTAL ${mes}:</td><td colspan="2">${fmtMoeda(estrutura[cong].meses[mes].totalMes)}</td></tr>`;
+                    h += `<tr class="grupo-subtotal"><td colspan="3">SUBTOTAL ${mes}:</td><td colspan="2" style='text-align:right'>${fmtMoeda(estrutura[cong].meses[mes].totalMes)}</td></tr>`;
                 });
-                h += `<tr class="grupo-subtotal" style="background: rgba(0,0,0,0.3)"><td colspan="3">TOTAL ACUMULADO ${cong}:</td><td colspan="2">${fmtMoeda(estrutura[cong].totalCong)}</td></tr>`;
+                const totSaldo = estrutura[cong].totalEntradas - estrutura[cong].totalSaidas;
+                h += `<tr class="grupo-subtotal" style="background:rgba(0,0,0,0.4)">`;
+                h += `<td>TOTAL ${cong}</td>`;
+                h += `<td class='valor-entrada' style='text-align:right'>${fmtMoeda(estrutura[cong].totalEntradas)}</td>`;
+                h += `<td class='valor-saida' style='text-align:right'>${fmtMoeda(estrutura[cong].totalSaidas)}</td>`;
+                h += `<td class='${totSaldo>=0?"valor-entrada":"valor-saida"}' style='text-align:right;font-weight:bold'>${fmtMoeda(totSaldo)}</td>`;
+                h += `<td></td></tr>`;
             });
-            h += `<tr class="linha-total-final"><td colspan="3">TOTAL GERAL DE ENTRADAS:</td><td colspan="2">${fmtMoeda(totalGeral)}</td></tr>`;
-            h += '</tbody></table>'; div.innerHTML = h;
+            h += `<tr class="linha-total-final">
+                <td style='text-align:left'>TOTAL GERAL</td>
+                <td>${fmtMoeda(totalEntradas)}</td>
+                <td>${fmtMoeda(totalSaidas)}</td>
+                <td>${fmtMoeda(saldoGeral)}</td>
+                <td></td>
+            </tr>`;
+            h += '</tbody></table>';
+            div.innerHTML = resumo + h;
         }
 
         async function executarBalanco() {
@@ -499,6 +617,214 @@
         }
 
         function fecharModalEdit() { document.getElementById('modal-edit').style.display = 'none'; }
+
+        // ══════════════ RELATÓRIO SIMPLIFICADO ══════════════
+        let todasCongregacoes = [];   // all known congregation names
+        let chipsSelecionados = [];   // currently selected chips
+
+        // Initialise autocomplete data once dock opens
+        function initSimplificadoAutocomplete() {
+            if (todasCongregacoes.length) return;
+            fetch('financeiro_lista_congregacoes')
+                .then(r => r.json())
+                .then(j => { if (j.status === 'success') todasCongregacoes = j.dados; });
+        }
+
+        // Wire abrirDock to init autocomplete when simplificado opens
+        const _origAbrirDock = window.abrirDock;
+        window.abrirDock = function(id) {
+            _origAbrirDock && _origAbrirDock(id);
+            if (id === 'simplificado') {
+                initSimplificadoAutocomplete();
+                // Set default dates if empty
+                const ano = new Date().getFullYear();
+                if (!document.getElementById('s-inicio').value)
+                    document.getElementById('s-inicio').value = `${ano}-01-01`;
+                if (!document.getElementById('s-fim').value)
+                    document.getElementById('s-fim').value = `${ano}-12-31`;
+            }
+        };
+
+        function filtrarSugestoesCong(val) {
+            const box = document.getElementById('s-cong-sugestoes');
+            const q = val.trim().toLowerCase();
+            if (!q) { box.style.display = 'none'; return; }
+            const r = todasCongregacoes.filter(c => c.toLowerCase().includes(q) && !chipsSelecionados.includes(c));
+            if (!r.length) { box.style.display = 'none'; return; }
+            box.innerHTML = r.map(c => `<div onclick="adicionarChip('${c.replace(/'/g,"\\'")}');document.getElementById('s-cong-input').value='';filtrarSugestoesCong('');"
+                style="padding:10px 14px;cursor:pointer;color:#fff;font-size:.88rem;border-bottom:1px solid rgba(255,255,255,.06)"
+                onmouseover="this.style.background='rgba(127,219,255,.15)'" onmouseout="this.style.background=''">${c}</div>`).join('');
+            box.style.display = 'block';
+        }
+
+        function adicionarChip(nome) {
+            if (chipsSelecionados.includes(nome)) return;
+            chipsSelecionados.push(nome);
+            renderChips();
+        }
+
+        function removerChip(nome) {
+            chipsSelecionados = chipsSelecionados.filter(c => c !== nome);
+            renderChips();
+        }
+
+        function renderChips() {
+            const container = document.getElementById('s-chips');
+            // Remove old chips (keep input)
+            container.querySelectorAll('.chip-tag').forEach(el => el.remove());
+            const input = document.getElementById('s-cong-input');
+            chipsSelecionados.forEach(nome => {
+                const chip = document.createElement('span');
+                chip.className = 'chip-tag';
+                chip.style.cssText = 'display:inline-flex;align-items:center;gap:5px;background:rgba(127,219,255,.2);border:1px solid rgba(127,219,255,.4);border-radius:20px;padding:3px 10px;font-size:.8rem;color:#7FDBFF;white-space:nowrap';
+                chip.innerHTML = `${nome} <span onclick="removerChip('${nome.replace(/'/g,"\\'")}');event.stopPropagation();" style="cursor:pointer;font-weight:bold;color:rgba(255,255,255,.6);font-size:.9rem">×</span>`;
+                container.insertBefore(chip, input);
+            });
+        }
+
+        function handleChipKey(e) {
+            const inp = document.getElementById('s-cong-input');
+            if ((e.key === 'Enter' || e.key === ',') && inp.value.trim()) {
+                e.preventDefault();
+                const val = inp.value.trim().replace(',','');
+                // If exact match in list, add it; otherwise try partial
+                const match = todasCongregacoes.find(c => c.toLowerCase() === val.toLowerCase())
+                           || todasCongregacoes.find(c => c.toLowerCase().includes(val.toLowerCase()));
+                if (match) { adicionarChip(match); inp.value = ''; filtrarSugestoesCong(''); }
+            }
+            if (e.key === 'Backspace' && inp.value === '' && chipsSelecionados.length) {
+                removerChip(chipsSelecionados[chipsSelecionados.length - 1]);
+            }
+            if (e.key === 'Escape') document.getElementById('s-cong-sugestoes').style.display = 'none';
+        }
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#s-chips') && !e.target.closest('#s-cong-sugestoes'))
+                document.getElementById('s-cong-sugestoes').style.display = 'none';
+        });
+
+        async function executarSimplificado() {
+            const ini  = document.getElementById('s-inicio').value;
+            const fim  = document.getElementById('s-fim').value;
+            const div  = document.getElementById('res-simplificado');
+            div.innerHTML = '<p style="text-align:center;padding:30px;opacity:.6">Carregando…</p>';
+
+            const congParam = chipsSelecionados.join(',');
+            const params = new URLSearchParams({ inicio: ini, fim: fim });
+            if (congParam) params.set('congregacoes', congParam);
+
+            const resp = await fetch('api_rel_simplificado?' + params);
+            const json = await resp.json();
+            if (json.status !== 'success' || !json.dados.length) {
+                div.innerHTML = '<p style="text-align:center;padding:30px;opacity:.6">Nenhum dado encontrado para o período.</p>';
+                return;
+            }
+
+            document.getElementById('simpl-periodo-texto').textContent =
+                `Período: ${new Date(ini+'T12:00').toLocaleDateString('pt-BR')} a ${new Date(fim+'T12:00').toLocaleDateString('pt-BR')}` +
+                (chipsSelecionados.length ? ` | Congregações: ${chipsSelecionados.join(', ')}` : ' | Todas as congregações');
+
+            const dados = json.dados;
+            const max = parseFloat(dados[0].total);
+            const totalGeral = dados.reduce((s,d) => s + parseFloat(d.total), 0);
+
+            let h = `<table class="tabela-relatorio">
+                <thead><tr>
+                    <th style="width:40px">#</th>
+                    <th>Congregação</th>
+                    <th style="text-align:right">Registros</th>
+                    <th style="text-align:right;color:var(--verde)">Total Entradas</th>
+                    <th>Proporção</th>
+                </tr></thead><tbody>`;
+
+            dados.forEach((d, i) => {
+                const v = parseFloat(d.total);
+                const pct = Math.round((v / max) * 100);
+                const pctTotal = ((v / totalGeral) * 100).toFixed(1);
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}º`;
+                const barColor = i === 0 ? 'var(--verde)' : i < 3 ? '#7FDBFF' : 'rgba(255,255,255,.3)';
+                h += `<tr>
+                    <td style="text-align:center;font-weight:bold;font-size:1rem">${medal}</td>
+                    <td style="font-weight:600">${d.congregacao}</td>
+                    <td style="text-align:right;opacity:.7">${d.registros}</td>
+                    <td class="valor-entrada" style="text-align:right;font-size:1rem">${fmtMoeda(v)}</td>
+                    <td style="min-width:160px">
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <div style="flex:1;background:rgba(255,255,255,.08);border-radius:4px;height:8px">
+                                <div style="width:${pct}%;height:100%;border-radius:4px;background:${barColor};transition:width .6s"></div>
+                            </div>
+                            <span style="font-size:.78rem;color:rgba(255,255,255,.6);min-width:38px">${pctTotal}%</span>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+
+            h += `</tbody></table>
+            <table class="tabela-relatorio" style="margin-top:16px">
+                <tbody>
+                    <tr class="linha-total-final">
+                        <td style="text-align:left">TOTAL GERAL</td>
+                        <td style="text-align:right">${dados.reduce((s,d)=>s+parseInt(d.registros),0)} registros</td>
+                        <td style="text-align:right">${fmtMoeda(totalGeral)}</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>`;
+
+            div.innerHTML = h;
+        }
+
+        function exportarSimplificadoTxt() {
+            const div = document.getElementById('res-simplificado');
+            if (!div || !div.querySelector('table')) {
+                alert('Gere o relatório primeiro antes de exportar.'); return;
+            }
+            const ini  = document.getElementById('s-inicio').value;
+            const fim  = document.getElementById('s-fim').value;
+            const periodoFmt = `${new Date(ini+'T12:00').toLocaleDateString('pt-BR')} a ${new Date(fim+'T12:00').toLocaleDateString('pt-BR')}`;
+            const filtro = chipsSelecionados.length ? chipsSelecionados.join(', ') : 'Todas as congregações';
+
+            const rows = div.querySelectorAll('.tabela-relatorio tbody tr');
+            const sep  = '-'.repeat(72);
+            const lines = [];
+            lines.push('RELATÓRIO SIMPLIFICADO — TOTAIS POR CONGREGAÇÃO');
+            lines.push(sep);
+            lines.push(`Período  : ${periodoFmt}`);
+            lines.push(`Filtro   : ${filtro}`);
+            lines.push(`Gerado em: ${new Date().toLocaleString('pt-BR')}`);
+            lines.push(sep);
+            lines.push(`${'Posição'.padEnd(10)}${'Congregação'.padEnd(36)}${'Total (R$)'.padStart(18)}${'%'.padStart(8)}`);
+            lines.push(sep);
+
+            let totalRegs = 0, totalVal = 0;
+            rows.forEach((tr, i) => {
+                const tds = tr.querySelectorAll('td');
+                if (tds.length < 5) return; // skip total row from inner table
+                const pos   = (i+1) + 'º';
+                const cong  = (tds[1].textContent||'').trim();
+                const regs  = (tds[2].textContent||'').trim();
+                const valor = (tds[3].textContent||'').trim();
+                // span inside last td has the % text
+                const pct   = (tds[4].querySelector('span')?.textContent||'').trim();
+                totalRegs  += parseInt(regs) || 0;
+                lines.push(`${pos.padEnd(10)}${cong.padEnd(36)}${valor.padStart(18)}${pct.padStart(8)}`);
+            });
+            lines.push(sep);
+            // grand total row — value is in 3rd td (index 2), last td is empty
+            const totalRow = div.querySelector('.linha-total-final');
+            const totalValTxt = totalRow ? totalRow.querySelectorAll('td')[2]?.textContent?.trim() : '';
+            const totalRegsTxt = String(totalRegs);
+            lines.push(`${'TOTAL'.padEnd(10)}${''.padEnd(36)}${totalValTxt.padStart(18)}${'100.0%'.padStart(8)}`);
+            lines.push(sep);
+
+            const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `relatorio_simplificado_${ini}_${fim}.txt`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
     </script>
 </body>
 </html>

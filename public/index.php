@@ -37,6 +37,21 @@ if ($route === 'autenticar') {
     exit;
 }
 
+if ($route === 'verificar2fa') {
+    (new LoginController())->verificar2fa();
+    exit;
+}
+
+if ($route === 'logout') {
+    (new LoginController())->logout();
+    exit;
+}
+
+if ($route === 'validar_senha') {
+    (new LoginController())->validarSenha();
+    exit;
+}
+
 // --- PROTEÇÃO DE ROTAS (Precisa estar logado para o resto) ---
 LoginController::checkAuth();
 
@@ -46,6 +61,20 @@ switch ($route) {
     case 'dashboard':
         $viewPath = $baseAppPath . $ds . 'Views' . $ds . 'dashboard.php';
         break;
+
+    // --- SEGURANÇA / 2FA ---
+    case 'setup_2fa':
+        (new LoginController())->setup2faView();
+        exit;
+    case 'get2fa_setup':
+        (new LoginController())->get2faSetup();
+        exit;
+    case 'confirmar2fa':
+        (new LoginController())->confirmar2fa();
+        exit;
+    case 'desativar2fa':
+        (new LoginController())->desativar2fa();
+        exit;
 
     case 'membros':
         (new MembrosController())->index();
@@ -102,8 +131,28 @@ switch ($route) {
         (new FinanceiroController())->indexRelatorios();
         break;
 
+    case 'financeiro_incongruencias':
+        (new FinanceiroController())->indexIncongruencias();
+        break;
+
+    case 'financeiro_aceitar_incongruencia':
+        (new FinanceiroController())->aceitarIncongruencia();
+        break;
+
     case 'financeiro_cadastros':
         (new FinanceiroController())->indexCadastros();
+        break;
+
+    case 'financeiro_bi':
+        (new FinanceiroController())->indexBI();
+        break;
+
+    case 'api_bi':
+        (new FinanceiroController())->dadosBI();
+        break;
+
+    case 'api_rel_simplificado':
+        (new FinanceiroController())->relatorioSimplificado();
         break;
 
     case 'api_relatorios':
@@ -143,6 +192,10 @@ switch ($route) {
         (new \App\Controllers\UsuarioController())->papeis();
         break;
 
+    case 'usuarios_criar':
+        (new UsuarioController())->criarUsuario();
+        break;
+
     case 'usuarios_salvar_papeis':
         (new \App\Controllers\UsuarioController())->salvarUsuarioPapeis();
         break;
@@ -161,6 +214,14 @@ switch ($route) {
 
     case 'usuarios_excluir_papel':
         (new \App\Controllers\UsuarioController())->excluirPapel();
+        break;
+
+    case 'alterar_senha_view':
+        (new LoginController())->viewAlterarSenha();
+        break;
+
+    case 'alterar_senha_primeiro_acesso':
+        (new LoginController())->alterarSenhaPrimeiroAcesso();
         break;
 
     case 'logout':

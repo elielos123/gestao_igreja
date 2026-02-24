@@ -111,6 +111,7 @@
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <h1>Usuários e Permissões</h1>
             <div>
+                <button class="btn btn-success" onclick="openCreateUserModal()">Novo Usuário</button>
                 <a href="index.php?url=usuarios_papeis" class="btn btn-secondary">Gerenciar Papéis</a>
                 <a href="index.php?url=dashboard" class="btn btn-secondary">Voltar</a>
             </div>
@@ -144,6 +145,41 @@
         </table>
     </div>
 
+    <!-- Modal Novo Usuário -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">Criar Novo Usuário</h2>
+            <form id="userForm">
+                <div class="form-group">
+                    <label>Nome:</label>
+                    <input type="text" id="userNome" required style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:5px;">
+                </div>
+                <div class="form-group">
+                    <label>E-mail:</label>
+                    <input type="email" id="userEmail" required style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:5px;">
+                </div>
+                <div class="form-group">
+                    <label>Nível:</label>
+                    <select id="userNivel" style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:5px;">
+                        <option value="secretario">Secretário</option>
+                        <option value="tesoureiro">Tesoureiro</option>
+                        <option value="pastor">Pastor</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Senha Provisória:</label>
+                    <input type="password" id="userSenha" required style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:5px;">
+                    <small style="opacity:0.5;">Será solicitado que o usuário mude-a no primeiro acesso.</small>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-success" style="flex:1;">Criar</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeUserModal()" style="flex:1;">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal Editar Papéis -->
     <div id="rolesModal" class="modal">
         <div class="modal-content">
@@ -170,6 +206,39 @@
     </div>
 
     <script>
+        const userModal = document.getElementById('userModal');
+        const userForm = document.getElementById('userForm');
+
+        function openCreateUserModal() { userModal.style.display = 'flex'; }
+        function closeUserModal() { userModal.style.display = 'none'; }
+
+        userForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const dados = {
+                nome: document.getElementById('userNome').value,
+                email: document.getElementById('userEmail').value,
+                nivel: document.getElementById('userNivel').value,
+                senha: document.getElementById('userSenha').value
+            };
+
+            try {
+                const response = await fetch('index.php?url=usuarios_criar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+                const res = await response.json();
+                if (res.status === 'success') {
+                    alert(res.message);
+                    location.reload();
+                } else {
+                    alert(res.message);
+                }
+            } catch (err) {
+                alert('Erro ao criar usuário');
+            }
+        });
+
         const modal = document.getElementById('rolesModal');
         const form = document.getElementById('rolesForm');
         

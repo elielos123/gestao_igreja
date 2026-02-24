@@ -17,9 +17,42 @@ class FinanceiroController {
     public function indexEntradas() { require dirname(__DIR__) . '/Views/financeiro/entradas.php'; }
     public function indexSaidas() { require dirname(__DIR__) . '/Views/financeiro/saidas.php'; }
     public function indexRelatorios() { require dirname(__DIR__) . '/Views/financeiro/relatorios.php'; }
-    
-    // NOVO MÉTODO: Carrega a página de Cadastros (Importações)
+    public function indexIncongruencias() { require dirname(__DIR__) . '/Views/financeiro/incongruencias.php'; }
     public function indexCadastros() { require dirname(__DIR__) . '/Views/financeiro/cadastros.php'; }
+    public function indexBI() { require dirname(__DIR__) . '/Views/financeiro/bi.php'; }
+
+    public function dadosBI() {
+        header('Content-Type: application/json');
+        try {
+            $tipo  = $_GET['tipo'] ?? 'mensais';
+            $ini   = $_GET['inicio'] ?? date('Y-01-01');
+            $fim   = $_GET['fim']    ?? date('Y-12-31');
+            $ini2  = $_GET['inicio2'] ?? '';
+            $fim2  = $_GET['fim2']    ?? '';
+
+            switch ($tipo) {
+                case 'mensais':
+                    $dados = $this->model->biEntradasMensais($ini, $fim); break;
+                case 'top_congregacoes':
+                    $dados = $this->model->biTopCongregacoes($ini, $fim); break;
+                case 'dizimistas_fieis':
+                    $dados = $this->model->biDizimistasFields(); break;
+                case 'dizimistas_fieis_cong':
+                    $dados = $this->model->biDizimistasFieisPorCongregacao(); break;
+                case 'top_dizimistas':
+                    $dados = $this->model->biTopDizimistasPorCongregacao($ini, $fim); break;
+                case 'semanais':
+                    $dados = $this->model->biEntradasSemanais($ini, $fim); break;
+                case 'comparacao':
+                    $dados = $this->model->biComparacaoPeriodos($ini, $fim, $ini2, $fim2); break;
+                default:
+                    $dados = [];
+            }
+            echo json_encode(['status' => 'success', 'dados' => $dados]);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
 
     public function autocomplete() {
         header('Content-Type: application/json');
@@ -29,8 +62,8 @@ class FinanceiroController {
             
             $sugestoes = $this->model->buscarSugestoes($termo, $campo);
             
-            if ($campo === 'nome') {
-                // Retorna o objeto completo (label e congregacao)
+            if ($campo === 'nome' || $campo === 'recebedor' || $campo === 'dados_cadastrais') {
+                // Retorna o objeto completo (label, extra, etc)
                 echo json_encode($sugestoes);
             } else {
                 // Retorna apenas a lista de strings para compatibilidade
@@ -115,6 +148,18 @@ class FinanceiroController {
         } catch (Exception $e) { echo json_encode(['status' => 'error', 'message' => $e->getMessage()]); }
     }
 
+    public function aceitarIncongruencia() {
+        header('Content-Type: application/json');
+        try {
+            $dados = json_decode(file_get_contents('php://input'), true);
+            if (!$dados) throw new Exception("Dados vazios");
+            $res = $this->model->aceitarIncongruencia($dados['id'], $dados['origem']);
+            echo json_encode(['status' => $res ? 'success' : 'error']);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
     public function excluirEntrada() {
         header('Content-Type: application/json');
         try {
@@ -139,7 +184,7 @@ class FinanceiroController {
         $tabela = ($_GET['origem'] === 'Entrada') ? 'entradas' : 'saidas';
         $d = $this->model->buscarPorId($id, $tabela);
         if($d) {
-            $d['data_movimento'] = $d['Data'] ?? $d['data'];
+            $d['data_movimento'] = $d['data'];
             echo json_encode(['status' => 'success', 'dados' => $d]);
         } else { echo json_encode(['status' => 'error']); }
     }
@@ -171,6 +216,22 @@ class FinanceiroController {
         }
     }
 
+    public function relatorioSimplificado() {
+        header('Content-Type: application/json');
+        try {
+            $ini   = $_GET['inicio'] ?? date('Y-01-01');
+            $fim   = $_GET['fim']    ?? date('Y-12-31');
+            $congs = [];
+            if (!empty($_GET['congregacoes'])) {
+                $congs = array_filter(array_map('trim', explode(',', $_GET['congregacoes'])));
+            }
+            $dados = $this->model->relatorioSimplificado($ini, $fim, array_values($congs));
+            echo json_encode(['status' => 'success', 'dados' => $dados]);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
     public function listarCongregacoes() {
         header('Content-Type: application/json');
         // Ajuste: Converte o array de objetos do Model em um array simples de strings para o JS da View
@@ -178,6 +239,7 @@ class FinanceiroController {
         $lista = array_column($dados, 'congregacao');
         echo json_encode(['status' => 'success', 'dados' => $lista]);
     }
+
 
     private function limparValor($v) {
         $v = preg_replace('/[^0-9,]/', '', $v);

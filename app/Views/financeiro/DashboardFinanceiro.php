@@ -75,8 +75,10 @@
         <div class="sub-menu">
             <div class="menu-item active" data-url="financeiro_entradas">Entradas</div>
             <div class="menu-item" data-url="financeiro_saidas">Saídas</div>
-            <div class="menu-item" data-url="financeiro_relatorios">Pesquisas & Relatórios</div>
-            <div class="menu-item" data-url="financeiro_cadastros">Importações & Cadastros</div>
+            <div class="menu-item" data-url="financeiro_relatorios">Pesquisas &amp; Relatórios</div>
+            <div class="menu-item" data-url="financeiro_incongruencias" style="color:var(--vermelho-erro)">⚠️ Incongruências</div>
+            <div class="menu-item" data-url="financeiro_cadastros">Importações &amp; Cadastros</div>
+            <div class="menu-item" data-url="financeiro_bi" style="color:#7FDBFF">⚡ BI Analytics</div>
         </div>
 
         <!-- CONTEÚDO DINÂMICO -->

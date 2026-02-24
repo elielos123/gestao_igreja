@@ -188,4 +188,48 @@ class UsuarioController {
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
+
+    public function criarUsuario() {
+        Acl::check('manage_users');
+        header('Content-Type: application/json');
+        
+        try {
+            $dados = json_decode(file_get_contents('php://input'), true);
+            $nome = trim($dados['nome'] ?? '');
+            $email = trim($dados['email'] ?? '');
+            $senha = $dados['senha'] ?? '';
+            $nivel = $dados['nivel'] ?? 'secretario';
+
+            if (empty($nome) || empty($email) || empty($senha)) {
+                throw new Exception("Preencha todos os campos obrigatórios.");
+            }
+
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception("E-mail inválido.");
+            }
+
+            // Verifica se e-mail já existe
+            $stmt = $this->db->prepare("SELECT id FROM usuarios WHERE email = :email");
+            $stmt->execute([':email' => $email]);
+            if ($stmt->fetch()) {
+                throw new Exception("Este e-mail já está cadastrado.");
+            }
+
+            $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
+
+            $sql = "INSERT INTO usuarios (nome, email, senha, nivel, forçar_mudança_senha) 
+                    VALUES (:nome, :email, :senha, :nivel, 1)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':nome'  => $nome,
+                ':email' => $email,
+                ':senha' => $senhaHash,
+                ':nivel' => $nivel
+            ]);
+
+            echo json_encode(['status' => 'success', 'message' => 'Usuário criado com sucesso!']);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
 }

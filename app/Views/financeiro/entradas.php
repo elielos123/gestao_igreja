@@ -365,9 +365,9 @@
                                 item.className = 'suggestion-item';
                                 
                                 if (campoBD === 'nome' && typeof itemDados === 'object') {
-                                    item.innerHTML = `<strong>${itemDados.nome}</strong> - <small>${itemDados.congregacao}</small>`;
-                                    item.dataset.nomeValue = itemDados.nome;
-                                    item.dataset.congregacaoValue = itemDados.congregacao;
+                                    item.innerHTML = `<strong>${itemDados.label}</strong> - <small>${itemDados.congregacao || ''}</small>`;
+                                    item.dataset.nomeValue = itemDados.label;
+                                    item.dataset.congregacaoValue = itemDados.congregacao || '';
                                 } else {
                                     item.innerText = itemDados;
                                 }

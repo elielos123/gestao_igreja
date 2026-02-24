@@ -274,8 +274,13 @@
             </div>
 
             <div class="form-row">
-                <input type="text" id="descricao" class="input-3d" style="flex: 2;" placeholder="Descrição da Despesa (O que comprou?)" tabindex="3">
-                <input type="text" id="dados_cadastrais" class="input-3d" style="flex: 2;" placeholder="CNPJ / CPF ou Referência" tabindex="4">
+                <div class="input-group" style="flex: 2;">
+                    <input type="text" id="descricao" class="input-3d" placeholder="Descrição da Despesa (O que comprou?)" tabindex="3">
+                </div>
+                <div class="input-group" style="flex: 2;">
+                    <input type="text" id="dados_cadastrais" class="input-3d" placeholder="CNPJ / CPF ou Referência" tabindex="4" autocomplete="off">
+                    <div id="lista-dados" class="suggestions-list"></div>
+                </div>
             </div>
 
             <div class="form-row">
@@ -339,30 +344,58 @@
         });
 
         // Autocomplete de Recebedores
-        function configurarAutocomplete(inputId, listaId) {
+        function configurarAutocomplete(inputId, listaId, campoBD) {
             const input = document.getElementById(inputId);
             const lista = document.getElementById(listaId);
-            input.addEventListener('input', async () => {
+            let debounceTimer;
+
+            input.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
                 if (input.value.length < 2) { lista.style.display = 'none'; return; }
-                try {
-                    const response = await fetch(`financeiro_autocomplete?termo=${input.value}&campo=recebedor`);
-                    const dados = await response.json();
-                    lista.innerHTML = '';
-                    if (dados.length) {
-                        dados.forEach(t => {
-                            const div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.innerText = t;
-                            div.onclick = () => { input.value = t; lista.style.display = 'none'; input.focus(); };
-                            lista.appendChild(div);
-                        });
-                        lista.style.display = 'block';
-                    }
-                } catch(e) { console.error("Erro autocomplete"); }
+                
+                debounceTimer = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`financeiro_autocomplete?termo=${input.value}&campo=${campoBD}`);
+                        const dados = await response.json();
+                        lista.innerHTML = '';
+                        if (dados.length) {
+                            dados.forEach(t => {
+                                const div = document.createElement('div');
+                                div.className = 'suggestion-item';
+                                
+                                if (typeof t === 'object') {
+                                    div.innerHTML = `<strong>${t.label}</strong> ${t.extra ? '<br><small style="opacity:0.7">'+t.extra+'</small>' : ''}`;
+                                    div.onclick = () => {
+                                        input.value = t.label;
+                                        lista.style.display = 'none';
+                                        
+                                        // Auto-preenchimento cruzado
+                                        if (campoBD === 'recebedor' && t.extra) {
+                                            document.getElementById('dados_cadastrais').value = t.extra;
+                                        } else if (campoBD === 'dados_cadastrais' && t.extra) {
+                                            document.getElementById('recebedor').value = t.extra;
+                                        }
+                                        
+                                        input.focus();
+                                    };
+                                } else {
+                                    div.innerText = t;
+                                    div.onclick = () => { input.value = t; lista.style.display = 'none'; input.focus(); };
+                                }
+                                
+                                lista.appendChild(div);
+                            });
+                            lista.style.display = 'block';
+                        } else {
+                            lista.style.display = 'none';
+                        }
+                    } catch(e) { console.error("Erro autocomplete"); }
+                }, 300);
             });
             document.addEventListener('click', (e) => { if(e.target !== input) lista.style.display = 'none'; });
         }
-        configurarAutocomplete('recebedor', 'lista-recebedores');
+        configurarAutocomplete('recebedor', 'lista-recebedores', 'recebedor');
+        configurarAutocomplete('dados_cadastrais', 'lista-dados', 'dados_cadastrais');
 
         // Atalho Enter
         document.addEventListener('keydown', e => {
