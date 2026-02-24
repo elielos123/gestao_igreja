@@ -20,9 +20,29 @@ $dotenv->load();
 $ds = DIRECTORY_SEPARATOR;
 $baseAppPath = dirname(__DIR__) . $ds . 'app';
 
-// Captura a URL
-$route = isset($_GET['url']) ? $_GET['url'] : 'dashboard';
-$route = str_replace(['.', '/', '\\'], '', $route);
+// --- CAPTURA DE ROTA INTELIGENTE (Para Nginx e Apache) ---
+$requestUri = $_SERVER['REQUEST_URI'];
+$scriptName = $_SERVER['SCRIPT_NAME'];
+$basePath = str_replace('index.php', '', $scriptName);
+
+// Remove o caminho base e o index.php da URI para pegar apenas a rota
+$route = str_replace([$basePath, 'index.php'], '', $requestUri);
+
+// Remove parâmetros de busca (ex: ?id=1)
+$route = explode('?', $route)[0];
+
+// Limpa barras extras nas pontas
+$route = trim($route, '/');
+
+// Se a rota estiver vazia, vai para o dashboard
+if (empty($route)) {
+    $route = 'dashboard';
+}
+
+// Higienização de segurança (apenas para o switch interno)
+$cleanRoute = str_replace(['.', '/', '\\'], '', $route);
+// Substituímos o uso da variável $route original na lógica do switch para evitar conflitos
+$route = $cleanRoute;
 
 $viewPath = "";
 
