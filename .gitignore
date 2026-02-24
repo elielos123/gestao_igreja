@@ -45,6 +45,7 @@ backup*.sql
 logs/
 *.log.*
 error.log
+error_log
 access.log
 debug.log
 
@@ -63,6 +64,8 @@ cache/
 vendor/
 composer.lock
 composer.phar
+composer
+composer-setup.php
 
 # ========================================
 # Node.js (se usar npm/yarn)
