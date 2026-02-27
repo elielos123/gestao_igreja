@@ -1,4 +1,15 @@
+# --- CONFIGURAÇÕES DE SERVIDOR ---
+Options -Indexes
 RewriteEngine On
+
+# 1. EVITAR CACHE DE REDIRECIONAMENTO (Para resolver o bug de redirecionamento em excesso)
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+</IfModule>
+
+# 2. ROTEAMENTO PRINCIPAL
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
