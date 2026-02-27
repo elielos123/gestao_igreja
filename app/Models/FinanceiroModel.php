@@ -96,12 +96,23 @@ class FinanceiroModel {
 
     public function buscarSugestoes($termo, $campo) {
         if ($campo === 'nome') {
-            // Unifica nomes de membros, entradas e recebedores de saídas
-            $sql = "SELECT DISTINCT nome as label, congregacao, '' as extra FROM membros WHERE nome LIKE :termo 
-                    UNION 
-                    SELECT DISTINCT nome as label, congregacao, '' as extra FROM entradas WHERE nome LIKE :termo 
-                    UNION 
-                    SELECT DISTINCT recebedor as label, '' as congregacao, dados_cadastrais as extra FROM saidas WHERE recebedor LIKE :termo 
+            // Busca nomes de membros e entradas, e para cada um, tenta achar a congregação do último lançamento
+            $sql = "SELECT DISTINCT 
+                        u.label, 
+                        COALESCE(ult_ent.congregacao, u.cong_cad) as congregacao
+                    FROM (
+                        SELECT nome as label, congregacao as cong_cad FROM membros
+                        UNION
+                        SELECT nome as label, congregacao as cong_cad FROM entradas
+                    ) as u
+                    LEFT JOIN (
+                        SELECT e1.nome, e1.congregacao 
+                        FROM entradas e1
+                        INNER JOIN (
+                            SELECT nome, MAX(id) as max_id FROM entradas GROUP BY nome
+                        ) e2 ON e1.id = e2.max_id
+                    ) as ult_ent ON u.label = ult_ent.nome
+                    WHERE u.label LIKE :termo
                     LIMIT 15";
         } elseif ($campo === 'recebedor') {
             // Busca recebedores e seus dados cadastrais
@@ -109,6 +120,9 @@ class FinanceiroModel {
         } elseif ($campo === 'dados_cadastrais') {
             // Busca dados cadastrais e seus recebedores
             $sql = "SELECT DISTINCT dados_cadastrais as label, recebedor as extra FROM saidas WHERE dados_cadastrais LIKE :termo AND dados_cadastrais <> '' LIMIT 15";
+        } elseif ($campo === 'descricao') {
+            // Busca descrições únicas de saídas
+            $sql = "SELECT DISTINCT descricao as label, '' as extra FROM saidas WHERE descricao LIKE :termo AND descricao <> '' LIMIT 15";
         } else {
             $sql = "SELECT DISTINCT $campo as label, '' as extra FROM entradas WHERE $campo LIKE :termo 
                     UNION 

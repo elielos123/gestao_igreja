@@ -263,6 +263,43 @@
             body.in-iframe .header, body.in-iframe .btn-voltar { display: none !important; }
             body.in-iframe .form-wrapper { padding-top: 20px; }
         }
+
+        /* MODAL CONFLITO CONGREGAÇÃO */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 10, 20, 0.9);
+            display: none;
+            align-items: center; justify-content: center;
+            z-index: 3000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-card {
+            background: var(--azul-claro);
+            border: 2px solid #7FDBFF;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%; max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            animation: modalIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes modalIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-card h2 { color: #7FDBFF; margin-bottom: 20px; font-size: 1.5rem; text-align: center; }
+        .modal-card p { margin-bottom: 25px; line-height: 1.5; color: rgba(255,255,255,0.9); }
+        .modal-actions { display: flex; flex-direction: column; gap: 15px; }
+        .btn-modal {
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            font-size: 1rem;
+        }
+        .btn-modal-primary { background: #7FDBFF; color: var(--azul-fundo); }
+        .btn-modal-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-modal:hover { transform: translateY(-2px); opacity: 0.9; }
     </style>
     <script>
         if (window.self !== window.top) {
@@ -274,6 +311,19 @@
 <body>
 
     <div id="flash-message">SALVO!</div>
+
+    <!-- MODAL DE CONFLITO DE CONGREGAÇÃO -->
+    <div id="modal-conflito" class="modal-overlay">
+        <div class="modal-card">
+            <h2>Membro em outra Congregação</h2>
+            <p id="modal-msg"></p>
+            <div class="modal-actions">
+                <button class="btn-modal btn-modal-primary" id="btn-usar-armazenada">Usar congregação cadastrada</button>
+                <button class="btn-modal btn-modal-secondary" id="btn-transferir-membro">Transferir membro para esta congregação</button>
+                <button class="btn-modal btn-modal-secondary" onclick="fecharModal()">Manter apenas para esta entrada</button>
+            </div>
+        </div>
+    </div>
 
     <div class="header">
         <a href="financeiro" class="btn-voltar">VOLTAR</a>
@@ -417,8 +467,18 @@
 
         function selecionarItem(item, input, lista, campoBD) {
             if (campoBD === 'nome' && item.dataset.nomeValue) {
-                input.value = item.dataset.nomeValue;
-                document.getElementById('congregacao').value = item.dataset.congregacaoValue;
+                const nomeSel = item.dataset.nomeValue;
+                const congSel = item.dataset.congregacaoValue;
+                const congAtual = document.getElementById('congregacao').value;
+
+                input.value = nomeSel;
+                
+                // Se o formulário já tem uma congregação e ela é diferente da do membro...
+                if (congAtual && congSel && congAtual !== congSel) {
+                    abrirModalConflito(nomeSel, congSel, congAtual);
+                } else {
+                    document.getElementById('congregacao').value = congSel;
+                }
             } else {
                 input.value = item.innerText;
             }
@@ -426,6 +486,40 @@
             // AJUSTE SOLICITADO: Após autocomplete do nome, vai para DATA
             if (campoBD === 'nome') document.getElementById('data').focus();
             else input.focus();
+        }
+
+        function abrirModalConflito(nome, congDB, congDigitada) {
+            document.getElementById('modal-msg').innerHTML = `O membro <strong>${nome}</strong> está registrado na congregação <strong>${congDB}</strong>, mas você selecionou a congregação <strong>${congDigitada}</strong>.<br><br>O que deseja fazer?`;
+            
+            document.getElementById('btn-usar-armazenada').onclick = () => {
+                document.getElementById('congregacao').value = congDB;
+                fecharModal();
+            };
+            
+            document.getElementById('btn-transferir-membro').onclick = async () => {
+                try {
+                    const response = await fetch('membros_atualizar_congregacao', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome: nome, congregacao: congDigitada })
+                    });
+                    const res = await response.json();
+                    if (res.status === 'success') {
+                        fecharModal();
+                        const flash = document.getElementById('flash-message');
+                        flash.innerText = "MEMBRO TRANSFERIDO!";
+                        flash.style.opacity = '1';
+                        flash.style.transform = 'translate(-50%, -50%) scale(1)';
+                        setTimeout(() => { flash.style.opacity = '0'; flash.style.transform = 'translate(-50%, -50%) scale(0.8)'; }, 1500);
+                    } else { alert("Erro ao transferir: " + res.message); }
+                } catch (e) { alert("Erro de conexão."); }
+            };
+            
+            document.getElementById('modal-conflito').style.display = 'flex';
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-conflito').style.display = 'none';
         }
 
         configurarAutocomplete('nome', 'lista-nomes', 'nome');

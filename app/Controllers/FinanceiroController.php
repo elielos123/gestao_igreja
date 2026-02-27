@@ -62,7 +62,7 @@ class FinanceiroController {
             
             $sugestoes = $this->model->buscarSugestoes($termo, $campo);
             
-            if ($campo === 'nome' || $campo === 'recebedor' || $campo === 'dados_cadastrais') {
+            if ($campo === 'nome' || $campo === 'recebedor' || $campo === 'dados_cadastrais' || $campo === 'descricao') {
                 // Retorna o objeto completo (label, extra, etc)
                 echo json_encode($sugestoes);
             } else {

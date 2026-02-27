@@ -46,13 +46,10 @@ class Acl {
             session_start();
         }
 
-        // Se for admin (nível 1), as vezes pode ter bypass, mas vamos seguir ACL pura
-        // se preferir bypass por nível:
-        /*
-        if (isset($_SESSION['usuario_nivel']) && $_SESSION['usuario_nivel'] == 1) {
+        // Bypass para Administradores (nível 'admin')
+        if (isset($_SESSION['usuario_nivel']) && $_SESSION['usuario_nivel'] === 'admin') {
             return true;
         }
-        */
 
         $perms = $_SESSION['usuario_permissoes'] ?? [];
         

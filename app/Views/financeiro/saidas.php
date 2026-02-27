@@ -151,7 +151,11 @@
             border-bottom: 1px solid rgba(255,255,255,0.1);
             transition: background 0.2s;
         }
-        .suggestion-item:hover { background-color: var(--vermelho-erro); font-weight: bold; }
+        .suggestion-item:hover, .suggestion-item.selected { 
+            background-color: var(--vermelho-erro); 
+            font-weight: bold; 
+            padding-left: 30px;
+        }
 
         /* --- DOCK / HISTÓRICO --- */
         .dock-container {
@@ -275,7 +279,8 @@
 
             <div class="form-row">
                 <div class="input-group" style="flex: 2;">
-                    <input type="text" id="descricao" class="input-3d" placeholder="Descrição da Despesa (O que comprou?)" tabindex="3">
+                    <input type="text" id="descricao" class="input-3d" placeholder="Descrição da Despesa (O que comprou?)" tabindex="3" autocomplete="off">
+                    <div id="lista-descricao" class="suggestions-list"></div>
                 </div>
                 <div class="input-group" style="flex: 2;">
                     <input type="text" id="dados_cadastrais" class="input-3d" placeholder="CNPJ / CPF ou Referência" tabindex="4" autocomplete="off">
@@ -348,16 +353,20 @@
             const input = document.getElementById(inputId);
             const lista = document.getElementById(listaId);
             let debounceTimer;
+            let currentFocus = -1;
 
             input.addEventListener('input', () => {
+                const termo = input.value;
                 clearTimeout(debounceTimer);
-                if (input.value.length < 2) { lista.style.display = 'none'; return; }
+                if (termo.length < 2) { lista.style.display = 'none'; return; }
                 
                 debounceTimer = setTimeout(async () => {
                     try {
-                        const response = await fetch(`financeiro_autocomplete?termo=${input.value}&campo=${campoBD}`);
+                        const response = await fetch(`financeiro_autocomplete?termo=${termo}&campo=${campoBD}`);
                         const dados = await response.json();
                         lista.innerHTML = '';
+                        currentFocus = -1;
+
                         if (dados.length) {
                             dados.forEach(t => {
                                 const div = document.createElement('div');
@@ -365,37 +374,78 @@
                                 
                                 if (typeof t === 'object') {
                                     div.innerHTML = `<strong>${t.label}</strong> ${t.extra ? '<br><small style="opacity:0.7">'+t.extra+'</small>' : ''}`;
-                                    div.onclick = () => {
-                                        input.value = t.label;
-                                        lista.style.display = 'none';
-                                        
-                                        // Auto-preenchimento cruzado
-                                        if (campoBD === 'recebedor' && t.extra) {
-                                            document.getElementById('dados_cadastrais').value = t.extra;
-                                        } else if (campoBD === 'dados_cadastrais' && t.extra) {
-                                            document.getElementById('recebedor').value = t.extra;
-                                        }
-                                        
-                                        input.focus();
-                                    };
+                                    div.dataset.label = t.label;
+                                    div.dataset.extra = t.extra || '';
                                 } else {
                                     div.innerText = t;
-                                    div.onclick = () => { input.value = t; lista.style.display = 'none'; input.focus(); };
+                                    div.dataset.label = t;
                                 }
-                                
+
+                                div.onclick = () => selecionarItem(input, lista, div.dataset.label, div.dataset.extra, campoBD);
                                 lista.appendChild(div);
                             });
                             lista.style.display = 'block';
                         } else {
                             lista.style.display = 'none';
                         }
-                    } catch(e) { console.error("Erro autocomplete"); }
+                    } catch(e) { console.error("Erro autocomplete", e); }
                 }, 300);
             });
+
+            input.addEventListener('keydown', function(e) {
+                let x = lista.getElementsByClassName("suggestion-item");
+                if (lista.style.display !== 'block') return;
+
+                if (e.key === "ArrowDown") {
+                    currentFocus++;
+                    addActive(x);
+                } else if (e.key === "ArrowUp") {
+                    currentFocus--;
+                    addActive(x);
+                } else if (e.key === "Enter") {
+                    if (currentFocus > -1) {
+                        e.preventDefault();
+                        if (x[currentFocus]) x[currentFocus].click();
+                    }
+                }
+            });
+
+            function addActive(x) {
+                if (!x) return false;
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                x[currentFocus].classList.add("selected");
+                x[currentFocus].scrollIntoView({ block: "nearest" });
+            }
+
+            function removeActive(x) {
+                for (let i = 0; i < x.length; i++) x[i].classList.remove("selected");
+            }
+            
             document.addEventListener('click', (e) => { if(e.target !== input) lista.style.display = 'none'; });
+        }
+
+        function selecionarItem(input, lista, label, extra, campoBD) {
+            input.value = label;
+            lista.style.display = 'none';
+            
+            // Auto-preenchimento cruzado (Recebedor <-> CPF/CNPJ)
+            if (campoBD === 'recebedor' && extra) {
+                document.getElementById('dados_cadastrais').value = extra;
+            } else if (campoBD === 'dados_cadastrais' && extra) {
+                document.getElementById('recebedor').value = extra;
+            }
+            
+            // Avança para o próximo campo após selecionar
+            const idx = inputs.indexOf(input);
+            if (idx > -1 && idx < inputs.length - 1) {
+                inputs[idx+1].focus();
+            }
         }
         configurarAutocomplete('recebedor', 'lista-recebedores', 'recebedor');
         configurarAutocomplete('dados_cadastrais', 'lista-dados', 'dados_cadastrais');
+        configurarAutocomplete('descricao', 'lista-descricao', 'descricao');
 
         // Atalho Enter
         document.addEventListener('keydown', e => {

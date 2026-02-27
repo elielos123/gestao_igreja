@@ -131,4 +131,28 @@ class MembrosController {
             exit;
         }
     }
+
+    public function atualizarCongregacaoPorNome() {
+        LoginController::checkAuth();
+        header('Content-Type: application/json');
+        try {
+            $dados = json_decode(file_get_contents('php://input'), true);
+            $nome = $dados['nome'] ?? '';
+            $novaCongregacao = $dados['congregacao'] ?? '';
+            
+            if (empty($nome) || empty($novaCongregacao)) {
+                throw new \Exception('Dados incompletos.');
+            }
+            
+            $db = (new \App\Config\Database())->getConnection();
+            $sql = "UPDATE membros SET congregacao = :cong WHERE nome = :nome";
+            $stmt = $db->prepare($sql);
+            $sucesso = $stmt->execute([':cong' => $novaCongregacao, ':nome' => $nome]);
+            
+            echo json_encode(['status' => $sucesso ? 'success' : 'error']);
+        } catch (\Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
 }

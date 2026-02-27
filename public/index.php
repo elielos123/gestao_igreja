@@ -8,10 +8,17 @@ header('Content-Type: text/html; charset=utf-8');
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
+// --- SUPORTE A HTTPS VIA PROXY (Cloudflare, etc) ---
+// Resolve o erro ERR_TOO_MANY_REDIRECTS em ambientes com SSL flexível
+if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+    $_SERVER['HTTPS'] = 'on';
+}
+
 use Dotenv\Dotenv;
 use App\Controllers\FinanceiroController;
 use App\Controllers\LoginController;
 use App\Controllers\MembrosController;
+use App\Controllers\UsuarioController;
 
 // Carrega as variáveis de ambiente
 $dotenv = Dotenv::createImmutable(dirname(__DIR__));
@@ -20,55 +27,51 @@ $dotenv->load();
 $ds = DIRECTORY_SEPARATOR;
 $baseAppPath = dirname(__DIR__) . $ds . 'app';
 
-// --- CAPTURA DE ROTA INTELIGENTE (Para Nginx e Apache) ---
+// --- CAPTURA DE ROTA INTELIGENTE (Compatível com Apache e Nginx) ---
 $requestUri = $_SERVER['REQUEST_URI'];
 $scriptName = $_SERVER['SCRIPT_NAME'];
-$basePath = str_replace('index.php', '', $scriptName);
 
-// Remove o caminho base e o index.php da URI para pegar apenas a rota
-$route = str_replace([$basePath, 'index.php'], '', $requestUri);
+// 1. Tenta capturar do parâmetro GET (Estilo antigo/Laragon)
+$route = $_GET['url'] ?? '';
 
-// Remove parâmetros de busca (ex: ?id=1)
-$route = explode('?', $route)[0];
+// 2. Se estiver vazio, tenta capturar da URI (Estilo moderno/Nginx)
+if (empty($route)) {
+    // Pega apenas o caminho da URL (sem query string)
+    $path = parse_url($requestUri, PHP_URL_PATH);
+    
+    // Remove o scriptName (ex: /public/index.php) ou o basePath dele (/public/)
+    $basePath = dirname($scriptName);
+    
+    // Remove as partes fixas da URL para sobrar apenas a rota
+    $route = str_replace([$scriptName, $basePath], '', $path);
+}
 
-// Limpa barras extras nas pontas
+// Limpa barras e higieniza
 $route = trim($route, '/');
 
-// Se a rota estiver vazia, vai para o dashboard
+// Se ainda estiver vazia, vai para o dashboard
 if (empty($route)) {
     $route = 'dashboard';
 }
 
-// Higienização de segurança (apenas para o switch interno)
-$cleanRoute = str_replace(['.', '/', '\\'], '', $route);
-// Substituímos o uso da variável $route original na lógica do switch para evitar conflitos
-$route = $cleanRoute;
+// Higienização de segurança
+$route = str_replace(['.', '/', '\\'], '', $route);
 
 $viewPath = "";
 
-// --- ROTAS PÚBLICAS ---
-if ($route === 'login') {
-    (new LoginController())->index();
-    exit;
-}
+// --- ROTAS PÚBLICAS (Ignoram checkAuth) ---
+$publicRoutes = ['login', 'autenticar', 'verificar2fa', 'logout', 'validar_senha', 'info', 'diagnostico'];
 
-if ($route === 'autenticar') {
-    (new LoginController())->autenticar();
-    exit;
-}
-
-if ($route === 'verificar2fa') {
-    (new LoginController())->verificar2fa();
-    exit;
-}
-
-if ($route === 'logout') {
-    (new LoginController())->logout();
-    exit;
-}
-
-if ($route === 'validar_senha') {
-    (new LoginController())->validarSenha();
+if (in_array($route, $publicRoutes)) {
+    switch ($route) {
+        case 'login': (new LoginController())->index(); break;
+        case 'autenticar': (new LoginController())->autenticar(); break;
+        case 'verificar2fa': (new LoginController())->verificar2fa(); break;
+        case 'logout': (new LoginController())->logout(); break;
+        case 'validar_senha': (new LoginController())->validarSenha(); break;
+        case 'info': phpinfo(); break;
+        case 'diagnostico': require 'diagnostico.php'; break;
+    }
     exit;
 }
 
@@ -110,6 +113,10 @@ switch ($route) {
 
     case 'membros_resolver_conflito':
         (new MembrosController())->resolverConflito();
+        break;
+
+    case 'membros_atualizar_congregacao':
+        (new MembrosController())->atualizarCongregacaoPorNome();
         break;
 
     case 'financeiro':
@@ -205,11 +212,11 @@ switch ($route) {
         break;
 
     case 'usuarios':
-        (new \App\Controllers\UsuarioController())->index();
+        (new UsuarioController())->index();
         break;
 
     case 'usuarios_papeis':
-        (new \App\Controllers\UsuarioController())->papeis();
+        (new UsuarioController())->papeis();
         break;
 
     case 'usuarios_criar':
@@ -217,23 +224,23 @@ switch ($route) {
         break;
 
     case 'usuarios_salvar_papeis':
-        (new \App\Controllers\UsuarioController())->salvarUsuarioPapeis();
+        (new UsuarioController())->salvarUsuarioPapeis();
         break;
 
     case 'usuarios_salvar_papel_permissoes':
-        (new \App\Controllers\UsuarioController())->salvarPapelPermissoes();
+        (new UsuarioController())->salvarPapelPermissoes();
         break;
 
     case 'usuarios_criar_papel':
-        (new \App\Controllers\UsuarioController())->criarPapel();
+        (new UsuarioController())->criarPapel();
         break;
 
     case 'usuarios_atualizar_papel':
-        (new \App\Controllers\UsuarioController())->atualizarPapel();
+        (new UsuarioController())->atualizarPapel();
         break;
 
     case 'usuarios_excluir_papel':
-        (new \App\Controllers\UsuarioController())->excluirPapel();
+        (new UsuarioController())->excluirPapel();
         break;
 
     case 'alterar_senha_view':

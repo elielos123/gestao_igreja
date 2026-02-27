@@ -305,13 +305,14 @@
             const checkedPerms = Array.from(form.querySelectorAll('input[name="permissoes[]"]:checked')).map(cb => cb.value);
 
             try {
-                const response = await fetch('index.php?url=usuarios_salvar_papeis', {
+                const response = await fetch('index.php?url=usuarios_salvar_papel_permissoes', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ papel_id: papelId, permissoes: checkedPerms })
                 });
                 const res = await response.json();
                 alert(res.message);
+                if (res.status === 'success') location.reload();
             } catch (err) {
                 alert('Erro ao salvar permissões do papel');
             }
