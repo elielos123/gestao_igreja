@@ -10,7 +10,9 @@ require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 // --- SUPORTE A HTTPS VIA PROXY (Cloudflare, etc) ---
 // Resolve o erro ERR_TOO_MANY_REDIRECTS em ambientes com SSL flexível
-if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+if ((isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || 
+    (isset($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false) ||
+    (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) {
     $_SERVER['HTTPS'] = 'on';
 }
 
