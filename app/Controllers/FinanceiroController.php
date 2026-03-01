@@ -210,6 +210,9 @@ class FinanceiroController {
                 $balanco[$mesRef]['saldo'] = $balanco[$mesRef]['entradas'] - $balanco[$mesRef]['saidas'];
             }
             echo json_encode(['status' => 'success', 'dados' => array_values($balanco)]);
+        } elseif ($tipoRelatorio === 'entradas_por_data') {
+            $dados = $this->model->buscarMovimentacoesPorDataCriacao($inicio, $fim);
+            echo json_encode(['status' => 'success', 'dados' => $dados]);
         } else {
             $dados = $this->model->pesquisarRelatorio($inicio, $fim, $_GET['nome']??'', $_GET['filtro_tipo']??'ambos', $_GET['ordem']??'data', $_GET['congregacao']??'todas');
             echo json_encode(['status' => 'success', 'dados' => $dados]);

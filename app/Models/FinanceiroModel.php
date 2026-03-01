@@ -383,4 +383,30 @@ class FinanceiroModel {
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Relatório de Movimentações por Data de Registro (Criação)
+     */
+    public function buscarMovimentacoesPorDataCriacao($inicio, $fim) {
+        $sql = "SELECT id, origem, principal, data_movimento, valor, info_extra, categoria, data_criacao,
+                       COUNT(*) OVER (PARTITION BY data_criacao) as num_mesmo_tempo
+                FROM (
+                    SELECT id, 'Entrada' as origem, nome as principal, data as data_movimento, valor, 
+                           congregacao as info_extra, tipo as categoria, data_criacao
+                    FROM entradas 
+                    WHERE DATE(data_criacao) BETWEEN :inicio AND :fim
+                    
+                    UNION ALL
+                    
+                    SELECT id, 'Saída' as origem, recebedor as principal, data as data_movimento, valor, 
+                           descricao as info_extra, tipo_saida as categoria, data_criacao
+                    FROM saidas 
+                    WHERE DATE(data_criacao) BETWEEN :inicio AND :fim
+                ) as mov
+                ORDER BY data_criacao DESC, id DESC";
+        
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute([':inicio' => $inicio, ':fim' => $fim]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

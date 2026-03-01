@@ -62,7 +62,7 @@ $route = str_replace(['.', '/', '\\'], '', $route);
 $viewPath = "";
 
 // --- ROTAS PÚBLICAS (Ignoram checkAuth) ---
-$publicRoutes = ['login', 'autenticar', 'verificar2fa', 'logout', 'validar_senha', 'info', 'diagnostico', 'redir_debug', 'test_headers'];
+$publicRoutes = ['login', 'autenticar', 'verificar2fa', 'logout', 'validar_senha', 'info', 'diagnostico', 'redir_debug', 'test_headers', 'alterar_senha_view', 'alterar_senha_primeiro_acesso'];
 
 if (in_array($route, $publicRoutes)) {
     switch ($route) {

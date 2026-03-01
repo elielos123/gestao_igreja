@@ -150,6 +150,7 @@
             <button class="btn-relatorio" onclick="abrirDock('detalhada')">VISUALIZAÇÃO<br>DETALHADA</button>
             <button class="btn-relatorio" onclick="abrirDock('balanco')">BALANÇO<br>MENSAL (AUDITORIA)</button>
             <button class="btn-relatorio" onclick="abrirDock('incongruencias')">BUSCA DE<br>INCONGRUÊNCIAS</button>
+            <button class="btn-relatorio" onclick="abrirDock('entradas-data')">MOVIMENTAÇÕES POR<br>DATA DE REGISTRO</button>
             <button class="btn-relatorio" onclick="abrirDock('simplificado')" style="grid-column:1/-1;background:rgba(46,204,64,.12);border-color:rgba(46,204,64,.4);color:#2ECC40">📊 RELATÓRIO SIMPLIFICADO<br><span style="font-size:.75em;font-weight:normal;opacity:.8">Totais por congregação · maior para menor</span></button>
         </div>
     </div>
@@ -223,6 +224,22 @@
             <button class="btn-visualizar" onclick="executarIncongruencias()">INICIAR VARREDURA DO SISTEMA</button>
         </div>
         <div class="resultados-area" id="res-incongruencias"></div>
+    </div>
+
+    <div id="dock-entradas-data" class="dock-overlay">
+        <div class="dock-header" onclick="fecharDock('entradas-data')"><h2>MOVIMENTAÇÕES POR DATA DE REGISTRO</h2><span>(Fechar)</span></div>
+        <div class="filtros-container">
+            <input type="date" id="ed-inicio" class="input-filtro">
+            <input type="date" id="ed-fim" class="input-filtro">
+            <button class="btn-visualizar" onclick="executarEntradasPorData()">VISUALIZAR</button>
+            <button class="btn-imprimir" onclick="window.print()">IMPRIMIR</button>
+        </div>
+        <div class="print-header">
+            <img src="img/logo.png" alt="Logo" class="logo-impressao">
+            <h2>RELATÓRIO DE MOVIMENTAÇÕES POR DATA DE REGISTRO</h2>
+            <p id="ed-periodo-texto">Relatório Financeiro</p>
+        </div>
+        <div class="resultados-area" id="res-entradas-data"></div>
     </div>
 
     <!-- DOCK: RELATÓRIO SIMPLIFICADO -->
@@ -313,8 +330,8 @@
             const inicio = `${ano}-01-01`;
             const fim = `${ano}-12-31`;
             
-            ['p-inicio', 'd-inicio', 'b-inicio'].forEach(id => document.getElementById(id).value = inicio);
-            ['p-fim', 'd-fim', 'b-fim'].forEach(id => document.getElementById(id).value = fim);
+            ['p-inicio', 'd-inicio', 'b-inicio', 'ed-inicio'].forEach(id => document.getElementById(id).value = inicio);
+            ['p-fim', 'd-fim', 'b-fim', 'ed-fim'].forEach(id => document.getElementById(id).value = fim);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -327,6 +344,7 @@
             if(dockAtual === 'pesquisa') executarPesquisa();
             if(dockAtual === 'detalhada') executarDetalhada();
             if(dockAtual === 'incongruencias') executarIncongruencias();
+            if(dockAtual === 'entradas-data') executarEntradasPorData();
         }
 
         async function executarPesquisa() {
@@ -547,6 +565,73 @@
                 }
             } catch (e) {
                 div.innerHTML = '<p style="color: var(--vermelho)">Erro ao conectar com o servidor para varredura.</p>';
+            }
+        }
+
+        async function executarEntradasPorData() {
+            const ini = document.getElementById('ed-inicio').value;
+            const fim = document.getElementById('ed-fim').value;
+            const div = document.getElementById('res-entradas-data');
+            document.getElementById('ed-periodo-texto').innerText = `Período de Registro: ${ini || '...'} até ${fim || 'Hoje'}`;
+            div.innerHTML = '<p style="text-align:center; padding:20px;">Carregando registros... Aguarde.</p>';
+
+            try {
+                const resp = await fetch(`api_relatorios?tipo_relatorio=entradas_por_data&inicio=${ini}&fim=${fim}`);
+                const json = await resp.json();
+
+                if (json.status === 'success') {
+                    if (!json.dados.length) {
+                        div.innerHTML = '<p style="text-align:center; padding:20px;">Nenhum registro encontrado para este período.</p>';
+                        return;
+                    }
+
+                    let h = `<table class="tabela-relatorio">
+                        <thead>
+                            <tr>
+                                <th>Data de Registro (Sistema)</th>
+                                <th>Data do Movimento</th>
+                                <th>Tipo</th>
+                                <th>Nome / Membro</th>
+                                <th>Detalhe</th>
+                                <th style="text-align:right">Valor</th>
+                                <th class="btn-acao-header">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+                    json.dados.forEach(d => {
+                        const dataMov = new Date(d.data_movimento + "T12:00:00").toLocaleDateString('pt-BR');
+                        
+                        let dataSis;
+                        const partes = d.data_criacao.split(' ');
+                        const diaSis = partes[0];
+                        const horaSis = partes[1];
+                        
+                        if (parseInt(d.num_mesmo_tempo) > 5) {
+                            dataSis = new Date(diaSis + "T12:00:00").toLocaleDateString('pt-BR') + ' (Importação)';
+                        } else {
+                            dataSis = new Date(diaSis + "T" + (horaSis || "00:00:00")).toLocaleString('pt-BR');
+                        }
+
+                        const valorCls = d.origem === 'Entrada' ? 'valor-entrada' : 'valor-saida';
+
+                        h += `<tr>
+                            <td>${dataSis}</td>
+                            <td>${dataMov}</td>
+                            <td><span class="tag-tipo">${d.origem}</span></td>
+                            <td style="font-weight:600">${d.principal}</td>
+                            <td style="font-size:0.85rem; opacity:0.8">${d.info_extra}</td>
+                            <td class="${valorCls}" style="text-align:right">${fmtMoeda(d.valor)}</td>
+                            <td>
+                                <button class="btn-edit btn-acao" onclick="prepararEdicao(${d.id}, '${d.origem}')">Editar</button>
+                            </td>
+                        </tr>`;
+                    });
+
+                    div.innerHTML = h + '</tbody></table>';
+                }
+            } catch (e) {
+                div.innerHTML = '<p style="color: var(--vermelho)">Erro ao conectar com o servidor.</p>';
             }
         }
 
