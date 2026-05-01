@@ -22,6 +22,7 @@ use App\Controllers\FinanceiroController;
 use App\Controllers\LoginController;
 use App\Controllers\MembrosController;
 use App\Controllers\UsuarioController;
+use App\Controllers\BackupController;
 
 // Carrega as variáveis de ambiente
 $dotenv = Dotenv::createImmutable(dirname(__DIR__));
@@ -214,6 +215,15 @@ switch ($route) {
 
     case 'ajustes_excluir':
         (new MembrosController())->excluirAjuste();
+        break;
+
+    // --- BACKUP ---
+    case 'backup_exportar':
+        (new BackupController())->exportar();
+        break;
+
+    case 'backup_importar':
+        (new BackupController())->importar();
         break;
 
     case 'usuarios':

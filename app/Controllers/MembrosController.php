@@ -9,13 +9,31 @@ class MembrosController {
     public function index() {
         LoginController::checkAuth();
         
+        // --- SYNC AUTOMÁTICO DE ENTRADAS PARA MEMBROS ---
+        // Pega as pessoas que deram entradas mas não estão na tabela de membros e insere-as automaticamente.
+        try {
+            $db = (new \App\Config\Database())->getConnection();
+            $sqlSync = "INSERT INTO membros (nome, congregacao, status) 
+                        SELECT e1.nome, e1.congregacao, 'Ativo' 
+                        FROM entradas e1
+                        INNER JOIN (
+                            SELECT nome, MAX(id) as max_id FROM entradas GROUP BY nome
+                        ) e2 ON e1.id = e2.max_id
+                        LEFT JOIN membros m ON e1.nome = m.nome 
+                        WHERE m.id IS NULL";
+            $db->exec($sqlSync);
+        } catch (\Exception $e) {
+            // Ignora silenciosamente para não quebrar a página
+        }
+        // ------------------------------------------------
+
         $membrosModel = new MembrosModel();
         $membros = $membrosModel->listarTodos();
         
         // Buscamos as listas de apoio diretamente das tabelas cadastradas
-        $congregacoes = $membrosModel->listarLookup('congregacoes');
-        $funcoes = $membrosModel->listarLookup('funcoes_eclesiasticas');
-        $cargos_cong = $membrosModel->listarLookup('cargos_congregacionais');
+        $congregacoes = $membrosModel->listarLookup('congregacao');
+        $funcoes = $membrosModel->listarLookup('funcao_eclesiastica');
+        $cargos_cong = $membrosModel->listarLookup('cargo_congregacional');
         $conflitos = $membrosModel->listarConflitos();
         
         include_once dirname(__DIR__) . '/Views/membros.php';
@@ -64,9 +82,9 @@ class MembrosController {
         LoginController::checkAuth();
         $membrosModel = new MembrosModel();
         
-        $congregacoes = $membrosModel->listarLookup('congregacoes');
-        $funcoes = $membrosModel->listarLookup('funcoes_eclesiasticas');
-        $cargos = $membrosModel->listarLookup('cargos_congregacionais');
+        $congregacoes = $membrosModel->listarLookup('congregacao');
+        $funcoes = $membrosModel->listarLookup('funcao_eclesiastica');
+        $cargos = $membrosModel->listarLookup('cargo_congregacional');
         
         include_once dirname(__DIR__) . '/Views/ajustes.php';
     }

@@ -177,9 +177,25 @@
         .btn { padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; }
         .btn-cancel { background: transparent; color: #999; }
         .btn-save { background: var(--verde-sucesso); color: #fff; }
+
+        /* FLASH MESSAGE */
+        #flash-ajustes {
+            position: fixed;
+            top: 20px; right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 3000;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
+    <div id="flash-ajustes"></div>
 
     <div class="header">
         <a href="membros" class="btn-voltar">
@@ -199,7 +215,7 @@
                 Congregações
             </h3>
             <form action="index.php?url=ajustes_salvar" method="POST" class="form-add">
-                <input type="hidden" name="tabela" value="congregacoes">
+                <input type="hidden" name="tabela" value="congregacao">
                 <input type="text" name="nome" placeholder="Adicionar nova..." required>
                 <button type="submit" class="btn-add">+</button>
             </form>
@@ -208,10 +224,10 @@
                 <li class="item">
                     <span><?= htmlspecialchars($item['nome']) ?></span>
                     <div class="item-actions">
-                        <button onclick="abrirEdicao('congregacoes', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-icon btn-edit" title="Editar">
+                        <button onclick="abrirEdicao('congregacao', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-icon btn-edit" title="Editar">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                         </button>
-                        <button onclick="excluir('congregacoes', <?= $item['id'] ?>)" class="btn-icon btn-del" title="Excluir">
+                        <button onclick="excluir('congregacao', <?= $item['id'] ?>)" class="btn-icon btn-del" title="Excluir">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                         </button>
                     </div>
@@ -227,7 +243,7 @@
                 Funções Eclesiásticas
             </h3>
             <form action="index.php?url=ajustes_salvar" method="POST" class="form-add">
-                <input type="hidden" name="tabela" value="funcoes_eclesiasticas">
+                <input type="hidden" name="tabela" value="funcao_eclesiastica">
                 <input type="text" name="nome" placeholder="Adicionar nova..." required>
                 <button type="submit" class="btn-add">+</button>
             </form>
@@ -236,10 +252,10 @@
                 <li class="item">
                     <span><?= htmlspecialchars($item['nome']) ?></span>
                     <div class="item-actions">
-                        <button onclick="abrirEdicao('funcoes_eclesiasticas', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-icon btn-edit" title="Editar">
+                        <button onclick="abrirEdicao('funcao_eclesiastica', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-icon btn-edit" title="Editar">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                         </button>
-                        <button onclick="excluir('funcoes_eclesiasticas', <?= $item['id'] ?>)" class="btn-icon btn-del" title="Excluir">
+                        <button onclick="excluir('funcao_eclesiastica', <?= $item['id'] ?>)" class="btn-icon btn-del" title="Excluir">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                         </button>
                     </div>
@@ -255,7 +271,7 @@
                 Cargos Congregacionais
             </h3>
             <form action="index.php?url=ajustes_salvar" method="POST" class="form-add">
-                <input type="hidden" name="tabela" value="cargos_congregacionais">
+                <input type="hidden" name="tabela" value="cargo_congregacional">
                 <input type="text" name="nome" placeholder="Adicionar novo..." required>
                 <button type="submit" class="btn-add">+</button>
             </form>
@@ -264,16 +280,45 @@
                 <li class="item">
                     <span><?= htmlspecialchars($item['nome']) ?></span>
                     <div class="item-actions">
-                        <button onclick="abrirEdicao('cargos_congregacionais', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-icon btn-edit" title="Editar">
+                        <button onclick="abrirEdicao('cargo_congregacional', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-icon btn-edit" title="Editar">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                         </button>
-                        <button onclick="excluir('cargos_congregacionais', <?= $item['id'] ?>)" class="btn-icon btn-del" title="Excluir">
+                        <button onclick="excluir('cargo_congregacional', <?= $item['id'] ?>)" class="btn-icon btn-del" title="Excluir">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                         </button>
                     </div>
                 </li>
                 <?php endforeach; ?>
             </ul>
+        </div>
+
+        <!-- Backup e Restauração -->
+        <div class="card">
+            <h3>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
+                Backup e Restauração
+            </h3>
+            <p style="font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-bottom: 20px;">
+                Exporte todo o banco de dados (membros, financeiro e configurações) ou restaure a partir de um backup.
+            </p>
+            
+            <a href="index.php?url=backup_exportar" class="btn-save" style="text-align: center; display: block; text-decoration: none; margin-bottom: 25px; padding: 15px;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="vertical-align: middle; margin-right: 5px;"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                EXPORTAR BACKUP (.SQL)
+            </a>
+
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+
+            <form action="index.php?url=backup_importar" method="POST" enctype="multipart/form-data" onsubmit="return confirm('ATENÇÃO: Isso apagará TODOS os dados atuais e restaurará os dados do arquivo. Tem certeza?');">
+                <label style="font-size: 0.85rem; display: block; margin-bottom: 10px; color: var(--vermelho);">
+                    <strong>Restauração (CUIDADO)</strong>
+                </label>
+                <input type="file" name="backup_file" accept=".sql" required style="width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #fff; margin-bottom: 15px;">
+                
+                <button type="submit" class="btn" style="background: rgba(231, 76, 60, 0.2); color: var(--vermelho); border: 1px solid var(--vermelho); width: 100%;">
+                    RESTAURAR DADOS
+                </button>
+            </form>
         </div>
 
     </div>
@@ -318,6 +363,30 @@
         }
 
         window.onclick = (e) => { if(e.target == modal) fecharEdicao(); }
+
+        // Flash Messages Handle
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('status')) {
+            const status = urlParams.get('status');
+            const flash = document.getElementById('flash-ajustes');
+            
+            if (status === 'backup_restored') {
+                flash.style.background = 'var(--verde-sucesso)';
+                flash.innerText = 'Backup restaurado com sucesso!';
+                flash.style.display = 'block';
+            } else if (status === 'backup_error') {
+                flash.style.background = 'var(--vermelho)';
+                flash.innerText = 'Erro ao restaurar: ' + (urlParams.get('msg') || '');
+                flash.style.display = 'block';
+            }
+            
+            if (flash.style.display === 'block') {
+                setTimeout(() => { flash.style.display = 'none'; }, 5000);
+            }
+            
+            // Clean URL
+            window.history.replaceState({}, document.title, "index.php?url=ajustes");
+        }
     </script>
 </body>
 </html>

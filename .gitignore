@@ -19,7 +19,7 @@ Thumbs.db
 # Arquivos de Configuração Sensíveis
 # ========================================
 # Arquivo de configuração do banco de dados (use Database.php.example como template)
-app/Config/Database.php
+# app/Config/Database.php (Removido do ignore pois agora usa variáveis de ambiente)
 *.local.php
 .env
 .env.local

@@ -15,12 +15,17 @@ use PDO;
 use PDOException;
 
 class Database {
+    private $host;
+    private $db_name;
+    private $username;
+    private $password;
     
-    // Configurações do Banco (ALTERE AQUI SE NECESSÁRIO)
-    private $host = "localhost";
-    private $db_name = "gestao_igreja"; // Nome do seu banco de dados
-    private $username = "root";         // Seu usuário do MySQL
-    private $password = "";             // Sua senha do MySQL
+    public function __construct() {
+        $this->host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: "localhost";
+        $this->db_name = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: "gestao_igreja";
+        $this->username = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: "root";
+        $this->password = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: "";
+    }
     
     // Variável estática para segurar a conexão
     public $conn;

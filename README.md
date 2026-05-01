@@ -8,101 +8,49 @@ Sistema de gestão financeira e administrativa para igrejas.
 - MySQL 5.7 ou superior
 - Apache/Nginx com mod_rewrite habilitado
 
-## 🚀 Instalação
+## 🚀 Instalação Local (Laragon/XAMPP)
 
-### 1. Clone o repositório
+1. Clone o repositório
+2. Configure o banco de dados MySQL local.
+3. Crie um arquivo `.env` na raiz do projeto com as seguintes variáveis:
+   ```env
+   DB_HOST=localhost
+   DB_NAME=gestao_igreja
+   DB_USER=root
+   DB_PASS=sua_senha
+   ```
 
-```bash
-git clone https://github.com/elielos123/gestao_igreja.git
-cd gestao_igreja
-```
+## ☁️ Deploy na Vercel
 
-### 2. Configure o banco de dados
+Este projeto está configurado para rodar na Vercel usando um PHP Runtime de comunidade.
 
-1. Crie um banco de dados MySQL chamado `gestao_igreja`
-2. Copie o arquivo de configuração de exemplo:
+### Passos para Deploy:
 
-```bash
-cp app/Config/Database.php.example app/Config/Database.php
-```
-
-3. Edite `app/Config/Database.php` com suas credenciais:
-
-```php
-private $host = "localhost";
-private $db_name = "gestao_igreja";
-private $username = "seu_usuario";
-private $password = "sua_senha";
-```
-
-### 3. Importe o banco de dados
-
-Se você tiver um backup SQL, importe-o:
-
-```bash
-mysql -u root -p gestao_igreja < seu_backup.sql
-```
-
-### 4. Configure o servidor web
-
-#### Usando Laragon (Windows)
-- Coloque o projeto em `C:\laragon\www\gestao_igreja`
-- Acesse: `http://localhost/gestao_igreja/public/`
-
-#### Usando XAMPP (Windows)
-- Coloque o projeto em `C:\xampp\htdocs\gestao_igreja`
-- Acesse: `http://localhost/gestao_igreja/public/`
+1. **Repositório**: Certifique-se de que o código está no seu GitHub.
+2. **Novo Projeto**: Na Vercel, importe o repositório.
+3. **Variáveis de Ambiente**: No Dashboard da Vercel (Settings > Environment Variables), adicione as credenciais do seu banco de dados **remoto**:
+   - `DB_HOST`: Host do banco remoto (ex: `mysql.servidor.com`)
+   - `DB_NAME`: Nome do banco
+   - `DB_USER`: Usuário
+   - `DB_PASS`: Senha
+4. **Deploy**: Clique em Deploy. A Vercel usará o arquivo `vercel.json` para configurar tudo automaticamente.
 
 ## 🔒 Segurança
 
-⚠️ **IMPORTANTE**: O arquivo `app/Config/Database.php` contém credenciais sensíveis e **NÃO** deve ser commitado no Git.
+O projeto agora utiliza variáveis de ambiente para maior segurança. 
 
-- ✅ Use `Database.php.example` como template
-- ✅ Mantenha `Database.php` apenas localmente
-- ✅ Nunca commite senhas ou credenciais
-
-## 📁 Estrutura do Projeto
-
-```
-gestao_igreja/
-├── app/
-│   └── Config/
-│       ├── Database.php.example  # Template de configuração
-│       └── Database.php          # Suas credenciais (não versionado)
-├── public/
-│   ├── index.php                 # Página principal
-│   ├── teste_db.php              # Teste de conexão
-│   └── img/                      # Imagens
-└── .gitignore
-```
-
-## 🧪 Testando a Conexão
-
-Acesse `http://localhost/gestao_igreja/public/teste_db.php` para verificar se a conexão com o banco de dados está funcionando.
+- O arquivo `app/Config/Database.php` **é versionado**, mas ele não contém senhas. Ele lê as informações do sistema ou do arquivo `.env`.
+- **NUNCA** coloque senhas diretamente no código.
+- O arquivo `.env` está no `.gitignore` para sua segurança.
 
 ## 📊 Funcionalidades
 
-- Gestão de congregações
-- Controle de entradas financeiras
-- Relatórios financeiros
-- Dashboard administrativo
-
-## 🤝 Contribuindo
-
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
-4. Push para a branch (`git push origin feature/MinhaFeature`)
-5. Abra um Pull Request
-
-## 📝 Licença
-
-Este projeto é privado e de uso restrito.
+- Gestão de membros e congregações
+- Controle de entradas e saídas financeiras
+- Relatórios avançados e Dashboard BI
+- Sistema de Autenticação com 2FA (Opcional)
+- Backup e Importação de dados
 
 ## 👤 Autor
 
 **elielos123**
-
----
-
-⚠️ **Lembre-se**: Nunca commite o arquivo `app/Config/Database.php` com suas credenciais reais!

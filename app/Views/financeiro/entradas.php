@@ -402,7 +402,11 @@
             input.addEventListener('input', function() {
                 const termo = this.value;
                 clearTimeout(debounceTimer);
-                if (termo.length < 2) { lista.style.display = 'none'; return; }
+                
+                // 3 letras para congregação, 2 letras para nome
+                const minLength = (campoBD === 'congregacao') ? 3 : 2;
+                if (termo.length < minLength) { lista.style.display = 'none'; return; }
+                
                 debounceTimer = setTimeout(async () => {
                     try {
                         const response = await fetch(`financeiro_autocomplete?termo=${termo}&campo=${campoBD}`);
@@ -478,15 +482,30 @@
                     abrirModalConflito(nomeSel, congSel, congAtual);
                 } else {
                     document.getElementById('congregacao').value = congSel;
+                    // TRANCA a congregação pois já foi localizada no sistema
+                    document.getElementById('congregacao').setAttribute('readonly', true);
+                    document.getElementById('congregacao').style.opacity = '0.5';
                 }
             } else {
                 input.value = item.innerText;
+                if (campoBD === 'congregacao') {
+                    // Ao autocompletar apenas congregação, a gente tranca também
+                    document.getElementById('congregacao').setAttribute('readonly', true);
+                    document.getElementById('congregacao').style.opacity = '0.5';
+                }
             }
             lista.style.display = 'none';
-            // AJUSTE SOLICITADO: Após autocomplete do nome, vai para DATA
+            // PULA para a data
             if (campoBD === 'nome') document.getElementById('data').focus();
+            else if (campoBD === 'congregacao') document.getElementById('tipo').focus();
             else input.focus();
         }
+
+        // DESTRANCA se o usuário modificar o nome
+        document.getElementById('nome').addEventListener('input', function() {
+            document.getElementById('congregacao').removeAttribute('readonly');
+            document.getElementById('congregacao').style.opacity = '1';
+        });
 
         function abrirModalConflito(nome, congDB, congDigitada) {
             document.getElementById('modal-msg').innerHTML = `O membro <strong>${nome}</strong> está registrado na congregação <strong>${congDB}</strong>, mas você selecionou a congregação <strong>${congDigitada}</strong>.<br><br>O que deseja fazer?`;
@@ -532,7 +551,14 @@
                 e.preventDefault();
                 const index = inputs.indexOf(document.activeElement);
                 if (index === inputs.length - 1) { tentarSalvar(); } 
-                else if (index > -1 && index < inputs.length - 1) { inputs[index + 1].focus(); }
+                else if (index > -1 && index < inputs.length - 1) { 
+                    let nextIndex = index + 1;
+                    // Se o próximo for a congregação e estiver trancada, pula ela
+                    if (inputs[nextIndex].id === 'congregacao' && inputs[nextIndex].hasAttribute('readonly')) {
+                        nextIndex++;
+                    }
+                    inputs[nextIndex].focus(); 
+                }
             }
         });
 
@@ -657,6 +683,11 @@
             document.getElementById('data').value = new Date().toLocaleDateString('pt-BR');
             document.getElementById('btn-dock-main').innerText = "Últimas Inserções ▾";
             document.getElementById('btn-dock-main').style.color = "var(--branco)";
+            
+            // DESTRANCA A CONGREGAÇÃO
+            document.getElementById('congregacao').removeAttribute('readonly');
+            document.getElementById('congregacao').style.opacity = '1';
+            
             document.getElementById('nome').focus();
         }
 
