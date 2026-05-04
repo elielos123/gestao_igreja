@@ -1,12 +1,7 @@
 <?php
 /**
- * Classe de Conexão com Banco de Dados
- * Padrão: Singleton (Garante apenas uma instância de conexão por requisição)
+ * Classe de Conexão com Banco de Dados (TiDB Cloud + Local)
  * Local: app/Config/Database.php
- * 
- * INSTRUÇÕES:
- * 1. Copie este arquivo para Database.php
- * 2. Altere as configurações abaixo com suas credenciais
  */
 
 namespace App\Config;
@@ -19,42 +14,56 @@ class Database {
     private $db_name;
     private $username;
     private $password;
+    private $port;
     
     public function __construct() {
-        $this->host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: "localhost";
-        $this->db_name = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: "gestao_igreja";
-        $this->username = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: "root";
-        $this->password = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: "";
+        // Tenta buscar das variáveis de ambiente (Vercel ou .env)
+        // Se não encontrar, usa os padrões do Laragon
+        $this->host = getenv('DB_HOST') ?: "localhost";
+        $this->db_name = getenv('DB_NAME') ?: "gestao_igreja";
+        $this->username = getenv('DB_USER') ?: "root";
+        $this->password = getenv('DB_PASS') ?: "";
+        $this->port = getenv('DB_PORT') ?: "3306";
     }
     
-    // Variável estática para segurar a conexão
     public $conn;
 
-    // Método para pegar a conexão
     public function getConnection() {
         $this->conn = null;
 
         try {
-            // String de conexão (DSN)
-            // Configurado para UTF-8 para aceitar acentos e caracteres especiais
-            $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";charset=utf8";
+            // String de conexão (DSN) - Incluindo a porta
+            $dsn = "mysql:host=" . $this->host . ";dbname=" . $this->db_name . ";port=" . $this->port . ";charset=utf8";
             
-            $this->conn = new PDO($dsn, $this->username, $this->password);
+            // Opções padrão de segurança e performance
+            $options = [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ];
+
+            // SE não for localhost, assume que é TiDB/Nuvem e ativa o SSL
+            if ($this->host !== "localhost" && $this->host !== "127.0.0.1") {
+                // TiDB exige conexão segura (SSL)
+                $options[PDO::MYSQL_ATTR_SSL_CA] = true;
+                // Alguns ambientes serverless precisam desativar a verificação rigorosa do certificado
+                $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+            }
             
-            // Configurações de Erro e Segurança
-            // ERRMODE_EXCEPTION: Faz o PHP parar e mostrar o erro se o SQL falhar (bom para dev)
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            
-            // DEFAULT_FETCH_MODE: Garante que os dados venham como array associativo por padrão
-            $this->conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            $this->conn = new PDO($dsn, $this->username, $this->password, $options);
 
         } catch(PDOException $exception) {
-            // Em produção, nunca mostre o erro exato para o usuário (segurança)
-            // Mas em desenvolvimento, precisamos ver o que houve:
-            echo "<div style='color:white; background:red; padding:10px; text-align:center;'>";
-            echo "<strong>Erro Crítico de Conexão:</strong> " . $exception->getMessage();
-            echo "</div>";
-            exit; // Para a execução do script
+            // Em desenvolvimento (localhost), mostra o erro na tela
+            if ($this->host === "localhost") {
+                echo "<div style='color:white; background:red; padding:10px; text-align:center;'>";
+                echo "<strong>Erro de Conexão:</strong> " . $exception->getMessage();
+                echo "</div>";
+            } else {
+                // Em produção, registra o erro (log) mas não mostra para o usuário por segurança
+                error_log("Erro de Conexão DB: " . $exception->getMessage());
+                echo "Erro temporário no servidor. Por favor, tente novamente mais tarde.";
+            }
+            exit;
         }
 
         return $this->conn;
