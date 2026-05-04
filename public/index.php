@@ -24,9 +24,9 @@ use App\Controllers\MembrosController;
 use App\Controllers\UsuarioController;
 use App\Controllers\BackupController;
 
-// Carrega as variáveis de ambiente
+// Carrega as variáveis de ambiente (safeLoad não gera erro se o arquivo .env não existir)
 $dotenv = Dotenv::createImmutable(dirname(__DIR__));
-$dotenv->load();
+$dotenv->safeLoad();
 
 $ds = DIRECTORY_SEPARATOR;
 $baseAppPath = dirname(__DIR__) . $ds . 'app';
