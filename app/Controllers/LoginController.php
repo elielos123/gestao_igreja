@@ -333,4 +333,100 @@ class LoginController
             \App\Helpers\Acl::loadUserPermissions($_SESSION['usuario_id']);
         }
     }
+
+    /**
+     * Initializes roles and permissions. Can be called via /index.php?url=init_database
+     */
+    public function initDatabase()
+    {
+        try {
+            $db = (new Database())->getConnection();
+            $db->beginTransaction();
+
+            echo "<h1>Iniciando Configuração de Permissões e Papéis...</h1>";
+
+            // 1. Permissões
+            $permissions = [
+                ['manage_users', 'Gerenciar usuários e permissões'],
+                ['manage_roles', 'Gerenciar papéis e permissões'],
+                ['view_membros', 'Visualizar membros'],
+                ['manage_membros', 'Criar e editar membros'],
+                ['view_financeiro', 'Visualizar financeiro'],
+                ['manage_financeiro', 'Realizar lançamentos financeiros'],
+                ['manage_settings', 'Gerenciar configurações'],
+                ['view_reports', 'Visualizar relatórios'],
+                ['manage_backup', 'Realizar backup do sistema']
+            ];
+
+            // Adiciona coluna descricao se não existir
+            try {
+                $db->exec("ALTER TABLE permissoes ADD COLUMN descricao VARCHAR(255) AFTER nome");
+                echo "<p>Coluna 'descricao' adicionada à tabela permissoes.</p>";
+            } catch (Exception $e) {
+                echo "<p>Coluna 'descricao' já existe ou erro ignorado.</p>";
+            }
+
+            $stmt = $db->prepare("INSERT IGNORE INTO permissoes (nome, descricao) VALUES (?, ?)");
+            foreach ($permissions as $p) {
+                $stmt->execute($p);
+            }
+            echo "<p>Permissões populadas.</p>";
+
+            // 2. Papéis
+            $roles = [
+                ['Tesouraria', 'Responsável pelas finanças da igreja'],
+                ['Secretaria', 'Responsável pelo cadastro de membros'],
+                ['Pastor', 'Acesso administrativo e visualização geral']
+            ];
+
+            $stmt = $db->prepare("INSERT IGNORE INTO papeis (nome, descricao) VALUES (?, ?)");
+            foreach ($roles as $r) {
+                $stmt->execute($r);
+            }
+            echo "<p>Papéis populados.</p>";
+
+            // 3. Mapeamento Papel-Permissão
+            $mapping = [
+                'Tesouraria' => ['view_financeiro', 'manage_financeiro', 'view_membros', 'view_reports'],
+                'Secretaria' => ['view_membros', 'manage_membros'],
+                'Pastor' => ['view_membros', 'view_financeiro', 'view_reports']
+            ];
+
+            foreach ($mapping as $roleName => $perms) {
+                $roleId = $db->query("SELECT id FROM papeis WHERE nome = '$roleName'")->fetchColumn();
+                foreach ($perms as $pName) {
+                    $pId = $db->query("SELECT id FROM permissoes WHERE nome = '$pName'")->fetchColumn();
+                    if ($roleId && $pId) {
+                        $db->prepare("INSERT IGNORE INTO papel_permissao (papel_id, permissao_id) VALUES (?, ?)")->execute([$roleId, $pId]);
+                    }
+                }
+            }
+            echo "<p>Mapeamento de permissões concluído.</p>";
+
+            // 4. Atribuição de Papéis com base no nível
+            $users = $db->query("SELECT id, nivel FROM usuarios")->fetchAll();
+            foreach ($users as $u) {
+                $roleName = '';
+                if ($u['nivel'] === 'tesoureiro') $roleName = 'Tesouraria';
+                elseif ($u['nivel'] === 'secretario') $roleName = 'Secretaria';
+                elseif ($u['nivel'] === 'pastor') $roleName = 'Pastor';
+
+                if ($roleName) {
+                    $roleId = $db->query("SELECT id FROM papeis WHERE nome = '$roleName'")->fetchColumn();
+                    if ($roleId) {
+                        $db->prepare("INSERT IGNORE INTO usuario_papel (usuario_id, papel_id) VALUES (?, ?)")->execute([$u['id'], $roleId]);
+                        echo "<p>Usuário ID {$u['id']} ({$u['nivel']}) associado ao papel $roleName.</p>";
+                    }
+                }
+            }
+
+            $db->commit();
+            echo "<h2>Sucesso! Banco de dados atualizado.</h2>";
+            echo "<a href='index.php?url=login'>Ir para Login</a>";
+
+        } catch (Exception $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            echo "<h1>Erro: " . $e->getMessage() . "</h1>";
+        }
+    }
 }

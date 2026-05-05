@@ -64,10 +64,13 @@ $route = str_replace(['.', '/', '\\'], '', $route);
 $viewPath = "";
 
 // --- ROTAS PÚBLICAS (Ignoram checkAuth) ---
-$publicRoutes = ['login', 'autenticar', 'verificar2fa', 'logout', 'validar_senha', 'info', 'diagnostico', 'redir_debug', 'test_headers', 'alterar_senha_view', 'alterar_senha_primeiro_acesso'];
+$publicRoutes = ['login', 'autenticar', 'verificar2fa', 'logout', 'validar_senha', 'info', 'diagnostico', 'redir_debug', 'test_headers', 'alterar_senha_view', 'alterar_senha_primeiro_acesso', 'reset_admin', 'init_database'];
 
 if (in_array($route, $publicRoutes)) {
     switch ($route) {
+        case 'reset_admin':
+            require_once 'instalar_admin.php';
+            exit;
         case 'login': (new LoginController())->index(); break;
         case 'autenticar': (new LoginController())->autenticar(); break;
         case 'verificar2fa': (new LoginController())->verificar2fa(); break;
@@ -77,6 +80,7 @@ if (in_array($route, $publicRoutes)) {
         case 'diagnostico': require 'diagnostico.php'; break;
         case 'redir_debug': require 'redir_debug.php'; break;
         case 'test_headers': require 'test_headers.php'; break;
+        case 'init_database': (new LoginController())->initDatabase(); break;
     }
     exit;
 }
