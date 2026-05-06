@@ -59,12 +59,12 @@ if (empty($route)) {
 }
 
 // Higienização de segurança
-$route = str_replace(['.', '/', '\\'], '', $route);
+$route = str_replace(['/', '\\'], '', $route);
 
 $viewPath = "";
 
 // --- ROTAS PÚBLICAS (Ignoram checkAuth) ---
-$publicRoutes = ['login', 'autenticar', 'verificar2fa', 'logout', 'validar_senha', 'info', 'diagnostico', 'redir_debug', 'test_headers', 'alterar_senha_view', 'alterar_senha_primeiro_acesso', 'reset_admin', 'init_database', 'install'];
+$publicRoutes = ['login', 'autenticar', 'verificar2fa', 'logout', 'validar_senha', 'info', 'diagnostico', 'redir_debug', 'test_headers', 'alterar_senha_view', 'alterar_senha_primeiro_acesso', 'reset_admin', 'init_database', 'install', 'install.php'];
 
 if (in_array($route, $publicRoutes)) {
     switch ($route) {
@@ -81,7 +81,10 @@ if (in_array($route, $publicRoutes)) {
         case 'redir_debug': require 'redir_debug.php'; break;
         case 'test_headers': require 'test_headers.php'; break;
         case 'init_database': (new LoginController())->initDatabase(); break;
-        case 'install': require 'install.php'; break;
+        case 'install': 
+        case 'install.php':
+            require 'install.php'; 
+            break;
     }
     exit;
 }
