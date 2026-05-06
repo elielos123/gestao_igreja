@@ -53,16 +53,11 @@ class Database {
             $this->conn = new PDO($dsn, $this->username, $this->password, $options);
 
         } catch(PDOException $exception) {
-            // Em desenvolvimento (localhost), mostra o erro na tela
-            if ($this->host === "localhost") {
-                echo "<div style='color:white; background:red; padding:10px; text-align:center;'>";
-                echo "<strong>Erro de Conexão:</strong> " . $exception->getMessage();
-                echo "</div>";
-            } else {
-                // Em produção, registra o erro (log) mas não mostra para o usuário por segurança
-                error_log("Erro de Conexão DB: " . $exception->getMessage());
-                echo "Erro temporário no servidor. Por favor, tente novamente mais tarde.";
-            }
+            // EXIBIÇÃO TEMPORÁRIA DE ERRO PARA DEBUG NA VERCEL
+            echo "<div style='color:white; background:red; padding:10px; text-align:center;'>";
+            echo "<strong>Erro de Conexão DB:</strong> " . $exception->getMessage();
+            echo "</div>";
+            error_log("Erro de Conexão DB: " . $exception->getMessage());
             exit;
         }
 
