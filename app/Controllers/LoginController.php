@@ -54,9 +54,9 @@ class LoginController
 
             // ── Buscar usuário ──
             $stmt = $this->db->prepare(
-                'SELECT id, nome, usuario, email, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios WHERE usuario = :u OR email = :u LIMIT 1'
+                'SELECT id, nome, usuario, email, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios WHERE usuario = :usuario OR email = :email LIMIT 1'
             );
-            $stmt->execute([':u' => $usuarioInput]);
+            $stmt->execute([':usuario' => $usuarioInput, ':email' => $usuarioInput]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$usuario || !password_verify($senha, $usuario['senha'])) {
