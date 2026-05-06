@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "functions": {
-    "index.php": {
-      "runtime": "vercel-php@0.7.3"
+  "builds": [
+    {
+      "src": "index.php",
+      "use": "vercel-php@0.7.3"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/(css|js|img|fonts|assets)/(.*)",
