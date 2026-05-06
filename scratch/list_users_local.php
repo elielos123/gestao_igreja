@@ -6,11 +6,12 @@ use App\Config\Database;
 
 try {
     $db = (new Database())->getConnection();
-    $res = $db->query("SELECT nome, usuario, email, nivel FROM usuarios")->fetchAll(PDO::FETCH_ASSOC);
-    echo "--- USUÁRIOS CADASTRADOS ---\n";
-    foreach ($res as $u) {
-        echo "Nome: {$u['nome']} | Usuário: {$u['usuario']} | E-mail: {$u['email']} | Nível: {$u['nivel']}\n";
-    }
+    $sql = "SELECT u.usuario, p.nome as papel FROM usuarios u 
+            LEFT JOIN usuario_papel up ON u.id = up.usuario_id 
+            LEFT JOIN papeis p ON p.id = up.papel_id 
+            WHERE u.usuario = 'admin'";
+    $res = $db->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    print_r($res);
 } catch (Exception $e) {
     echo "Erro: " . $e->getMessage();
 }

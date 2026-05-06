@@ -6,15 +6,37 @@
 
 header('Content-Type: text/html; charset=utf-8');
 
+// --- ATIVAR EXIBIÇÃO DE ERROS (LOCAL) ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 // --- SUPORTE A HTTPS VIA PROXY (Cloudflare, etc) ---
-// Resolve o erro de Redirecionamento em excesso (loop)
 if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' || 
     strpos(($_SERVER['HTTP_CF_VISITOR'] ?? ''), 'https') !== false ||
     ($_SERVER['SERVER_PORT'] ?? '') == 443 ||
     ($_SERVER['HTTP_HOST'] ?? '') !== 'localhost') {
     $_SERVER['HTTPS'] = 'on';
+}
+
+// --- LOGIN AUTOMÁTICO (DESENVOLVIMENTO LOCAL) ---
+// Se estiver no localhost, loga como admin automaticamente se não houver sessão
+if (($_SERVER['HTTP_HOST'] ?? '') === 'localhost' || ($_SERVER['HTTP_HOST'] ?? '') === '127.0.0.1') {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (!isset($_SESSION['usuario_id'])) {
+        $db = (new \App\Config\Database())->getConnection();
+        $stmt = $db->prepare("SELECT id, nome, nivel FROM usuarios WHERE usuario = 'admin' LIMIT 1");
+        $stmt->execute();
+        $admin = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if ($admin) {
+            $_SESSION['usuario_id'] = $admin['id'];
+            $_SESSION['usuario_nome'] = $admin['nome'];
+            $_SESSION['usuario_nivel'] = $admin['nivel'];
+            \App\Helpers\Acl::loadUserPermissions($admin['id']);
+        }
+    }
 }
 
 use Dotenv\Dotenv;
@@ -206,6 +228,10 @@ switch ($route) {
 
     case 'financeiro_salvar_edicao':
         (new FinanceiroController())->salvarEdicao();
+        break;
+
+    case 'financeiro_exportar_txt':
+        (new FinanceiroController())->exportarTxt();
         break;
 
     case 'financeiro_lista_congregacoes':

@@ -409,4 +409,18 @@ class FinanceiroModel {
         $stmt->execute([':inicio' => $inicio, ':fim' => $fim]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    /**
+     * Busca totais por congregação dos últimos 4 meses (atual + 3 anteriores)
+     */
+    public function buscarComparativoMensal() {
+        $sql = "SELECT congregacao, 
+                       DATE_FORMAT(data, '%Y-%m') as mes, 
+                       SUM(valor) as total
+                FROM entradas
+                WHERE data >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 3 MONTH), '%Y-%m-01')
+                  AND congregacao IS NOT NULL AND congregacao <> ''
+                GROUP BY congregacao, mes
+                ORDER BY congregacao ASC, mes ASC";
+        return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

@@ -256,6 +256,110 @@ class FinanceiroController {
     }
 
 
+    public function exportarTxt() {
+        Acl::check('view_financeiro');
+        $modo = $_GET['modo'] ?? 'completo';
+        $inicio = $_GET['inicio'] ?? '';
+        $fim = $_GET['fim'] ?? '';
+        $nome = $_GET['nome'] ?? '';
+        $congregacao = $_GET['congregacao'] ?? 'todas';
+
+        $dados = [];
+        if ($modo !== 'comparativo_mensal') {
+            $dados = $this->model->pesquisarRelatorio($inicio, $fim, $nome, 'entradas', 'congregacao', $congregacao);
+        }
+
+        $txt = "RELATÓRIO FINANCEIRO - MODO: " . strtoupper(str_replace('_', ' ', $modo)) . "\n";
+        $txt .= "Período: " . ($inicio ? date('d/m/Y', strtotime($inicio)) : 'Início') . " até " . ($fim ? date('d/m/Y', strtotime($fim)) : 'Fim') . "\n";
+        $txt .= str_repeat("-", 60) . "\n\n";
+
+        $totalGeral = 0;
+
+        if ($modo === 'completo') {
+            $porCongregacao = [];
+            foreach ($dados as $d) {
+                $porCongregacao[$d['info_extra']][] = $d;
+                $totalGeral += (float)$d['valor'];
+            }
+            foreach ($porCongregacao as $cong => $movs) {
+                $txt .= "CONGREGAÇÃO: " . strtoupper($cong) . "\n";
+                $subTotal = 0;
+                foreach ($movs as $m) {
+                    $txt .= sprintf("  %-30s | R$ %10.2f\n", $m['principal'], $m['valor']);
+                    $subTotal += (float)$m['valor'];
+                }
+                $txt .= "  " . str_repeat("-", 45) . "\n";
+                $txt .= sprintf("  SUBTOTAL %-21s | R$ %10.2f\n\n", $cong, $subTotal);
+            }
+            $txt .= str_repeat("=", 60) . "\n";
+            $txt .= sprintf("TOTAL GERAL: %44s R$ %10.2f\n", "", $totalGeral);
+
+        } elseif ($modo === 'total_congregacional') {
+            $totais = [];
+            foreach ($dados as $d) {
+                if (!isset($totais[$d['info_extra']])) $totais[$d['info_extra']] = 0;
+                $totais[$d['info_extra']] += (float)$d['valor'];
+                $totalGeral += (float)$d['valor'];
+            }
+            foreach ($totais as $cong => $total) {
+                $txt .= sprintf("%-45s | R$ %10.2f\n", strtoupper($cong), $total);
+            }
+            $txt .= str_repeat("=", 60) . "\n";
+            $txt .= sprintf("TOTAL GERAL: %44s R$ %10.2f\n", "", $totalGeral);
+
+        } elseif ($modo === 'dizimistas') {
+            $porCongregacao = [];
+            foreach ($dados as $d) {
+                $porCongregacao[$d['info_extra']][] = $d['principal'];
+            }
+            foreach ($porCongregacao as $cong => $nomes) {
+                $txt .= "CONGREGAÇÃO: " . strtoupper($cong) . "\n";
+                $nomes = array_unique($nomes);
+                sort($nomes);
+                foreach ($nomes as $n) {
+                    $txt .= "  - " . $n . "\n";
+                }
+                $txt .= "\n";
+            }
+
+        } elseif ($modo === 'comparativo_mensal') {
+            $dadosComp = $this->model->buscarComparativoMensal();
+            $meses = [];
+            $grid = [];
+            foreach ($dadosComp as $d) {
+                $meses[$d['mes']] = true;
+                $grid[$d['congregacao']][$d['mes']] = (float)$d['total'];
+            }
+            $mesesSorted = array_keys($meses);
+            sort($mesesSorted);
+
+            $txt .= sprintf("%-25s", "CONGREGAÇÃO");
+            foreach ($mesesSorted as $m) { $txt .= sprintf(" | %10s", $m); }
+            $txt .= "\n" . str_repeat("-", 25 + (count($mesesSorted) * 13)) . "\n";
+
+            $totaisMes = array_fill_keys($mesesSorted, 0);
+            foreach ($grid as $cong => $valores) {
+                $txt .= sprintf("%-25s", strtoupper(substr($cong, 0, 25)));
+                foreach ($mesesSorted as $m) {
+                    $v = $valores[$m] ?? 0;
+                    $txt .= sprintf(" | %10.2f", $v);
+                    $totaisMes[$m] += $v;
+                    $totalGeral += $v;
+                }
+                $txt .= "\n";
+            }
+            $txt .= str_repeat("=", 25 + (count($mesesSorted) * 13)) . "\n";
+            $txt .= sprintf("%-25s", "TOTAL GERAL");
+            foreach ($mesesSorted as $m) { $txt .= sprintf(" | %10.2f", $totaisMes[$m]); }
+            $txt .= "\n";
+        }
+
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Content-Disposition: attachment; filename="relatorio_' . $modo . '_' . date('Ymd_His') . '.txt"');
+        echo $txt;
+        exit;
+    }
+
     private function limparValor($v) {
         $v = preg_replace('/[^0-9,]/', '', $v);
         return str_replace(',', '.', $v);

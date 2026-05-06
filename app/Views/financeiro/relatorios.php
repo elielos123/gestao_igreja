@@ -184,7 +184,15 @@
                 <option value="valor">Ordem por Valor</option>
             </select>
             <button class="btn-visualizar" onclick="executarDetalhada()">GERAR LISTA</button>
-            <button class="btn-imprimir" onclick="window.print()">IMPRIMIR</button>
+            <button class="btn-imprimir" onclick="window.print()">IMPRIMIR TELA</button>
+        </div>
+        <!-- NOVOS BOTÕES DE EXPORTAÇÃO TXT -->
+        <div class="filtros-container" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: -10px;">
+            <span style="font-size: 0.75rem; opacity: 0.6; width: 100%; text-align: center; margin-bottom: 5px; font-weight: bold; letter-spacing: 1px;">EXPORTAR PARA TXT:</span>
+            <button class="btn-relatorio" style="height: 45px; flex: 1; background: #27ae60;" onclick="exportarTxt('completo')">📄 COMPLETO</button>
+            <button class="btn-relatorio" style="height: 45px; flex: 1; background: #27ae60;" onclick="exportarTxt('total_congregacional')">📊 TOTAIS</button>
+            <button class="btn-relatorio" style="height: 45px; flex: 1; background: #27ae60;" onclick="exportarTxt('dizimistas')">👥 DIZIMISTAS</button>
+            <button class="btn-relatorio" style="height: 45px; flex: 1; background: #27ae60;" onclick="exportarTxt('comparativo_mensal')">📅 COMPARATIVO</button>
         </div>
         <div class="print-header">
             <img src="img/logo.png" alt="Logo" class="logo-impressao">
@@ -479,6 +487,21 @@
             </tr>`;
             h += '</tbody></table>';
             div.innerHTML = resumo + h;
+        }
+
+        function exportarTxt(modo) {
+            const ini=document.getElementById('d-inicio').value, 
+                  fim=document.getElementById('d-fim').value, 
+                  cong=document.getElementById('d-congregacao').value;
+            
+            const params = new URLSearchParams({
+                modo: modo,
+                inicio: ini,
+                fim: fim,
+                congregacao: cong
+            });
+
+            window.location.href = `financeiro_exportar_txt?${params.toString()}`;
         }
 
         async function executarBalanco() {
