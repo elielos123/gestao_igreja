@@ -12,35 +12,31 @@ use App\Config\Database;
 try {
     $db = (new Database())->getConnection();
     
-    $nome  = "Administrador Novo";
-    $email = "admin@admin.com";
-    $senha = "Mudar123!"; // Senha temporária
-    $nivel = "admin"; // Nível de acesso
+    $nome  = "Administrador";
+    $usuario = "admin";
+    $email = "admin@igreja.com";
+    $senha = "Igreja@2026"; // Senha temporária
+    $nivel = "admin";
     
-    // Criptografa a senha
     $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
     
-    // Verifica se o e-mail já existe
-    $stmt = $db->prepare("SELECT id FROM usuarios WHERE email = :email");
-    $stmt->execute([':email' => $email]);
+    // Verifica se já existe
+    $stmt = $db->prepare("SELECT id FROM usuarios WHERE usuario = :u OR email = :e");
+    $stmt->execute([':u' => $usuario, ':e' => $email]);
+    $user = $stmt->fetch();
     
-    if ($stmt->fetch()) {
-        // Se já existe, apenas atualiza a senha e força a mudança
-        $sql = "UPDATE usuarios SET senha = :senha, nome = :nome, nivel = :nivel, forçar_mudança_senha = 1 WHERE email = :email";
-        $msg = "Usuário '$email' já existia. A senha foi resetada para '$senha'.";
+    if ($user) {
+        $sql = "UPDATE usuarios SET senha = :senha, usuario = :u, email = :e, nome = :nome, nivel = :nivel, forçar_mudança_senha = 1 WHERE id = :id";
+        $params = [':senha' => $senhaHash, ':u' => $usuario, ':e' => $email, ':nome' => $nome, ':nivel' => $nivel, ':id' => $user['id']];
+        $msg = "Usuário '$usuario' atualizado. Senha resetada para '$senha'.";
     } else {
-        // Se não existe, cria um novo
-        $sql = "INSERT INTO usuarios (nome, email, senha, nivel, forçar_mudança_senha) VALUES (:nome, :email, :senha, :nivel, 1)";
-        $msg = "Novo administrador criado com sucesso!<br>E-mail: $email<br>Senha: $senha";
+        $sql = "INSERT INTO usuarios (nome, usuario, email, senha, nivel, forçar_mudança_senha) VALUES (:nome, :u, :e, :senha, :nivel, 1)";
+        $params = [':nome' => $nome, ':u' => $usuario, ':e' => $email, ':senha' => $senhaHash, ':nivel' => $nivel];
+        $msg = "Novo administrador '$usuario' criado com sucesso! Senha: $senha";
     }
     
     $stmt = $db->prepare($sql);
-    $stmt->execute([
-        ':nome'  => $nome,
-        ':email' => $email,
-        ':senha' => $senhaHash,
-        ':nivel' => $nivel
-    ]);
+    $stmt->execute($params);
     
     echo "<h1>Sucesso!</h1>";
     echo "<p>$msg</p>";

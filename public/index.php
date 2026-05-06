@@ -262,6 +262,18 @@ switch ($route) {
         (new UsuarioController())->excluirPapel();
         break;
 
+    case 'usuarios_get':
+        (new UsuarioController())->getUsuario();
+        break;
+
+    case 'usuarios_atualizar':
+        (new UsuarioController())->atualizarUsuario();
+        break;
+
+    case 'usuarios_excluir':
+        (new UsuarioController())->excluirUsuario();
+        break;
+
     case 'alterar_senha_view':
         (new LoginController())->viewAlterarSenha();
         break;

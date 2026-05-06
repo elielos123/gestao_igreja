@@ -128,8 +128,8 @@
     <div id="step1">
         <form id="loginForm" novalidate>
             <div class="form-group">
-                <label for="email">E-mail</label>
-                <input type="email" id="email" placeholder="seu@email.com" autocomplete="username" required>
+                <label for="usuario">Usuário ou E-mail</label>
+                <input type="text" id="usuario" placeholder="Seu usuário" autocomplete="username" required>
             </div>
             <div class="form-group">
                 <label for="password">Senha</label>
@@ -233,7 +233,7 @@ loginForm.addEventListener('submit', async (e) => {
     hideAlert();
     setLoading(btnSubmit, loaderEl, btnText, true);
 
-    const email = document.getElementById('email').value.trim();
+    const usuario = document.getElementById('usuario').value.trim();
     const senha = document.getElementById('password').value;
 
     try {
@@ -245,7 +245,7 @@ loginForm.addEventListener('submit', async (e) => {
         const resp = await fetch('index.php?url=autenticar', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({email, senha, recaptcha_token})
+            body: JSON.stringify({usuario, senha, recaptcha_token})
         });
         const data = await resp.json();
 

@@ -3,11 +3,12 @@ namespace App\Controllers;
 
 use App\Models\MembrosModel;
 use App\Models\FinanceiroModel;
+use App\Helpers\Acl;
 
 class MembrosController {
     
-    public function index() {
         LoginController::checkAuth();
+        Acl::check('view_membros');
         
         // --- SYNC AUTOMÁTICO DE ENTRADAS PARA MEMBROS ---
         // Pega as pessoas que deram entradas mas não estão na tabela de membros e insere-as automaticamente.
@@ -41,6 +42,7 @@ class MembrosController {
 
     public function salvar() {
         LoginController::checkAuth();
+        Acl::check('manage_membros');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $membrosModel = new MembrosModel();
@@ -59,6 +61,7 @@ class MembrosController {
 
     public function excluir() {
         LoginController::checkAuth();
+        Acl::check('manage_membros');
         
         if (isset($_GET['id'])) {
             $membrosModel = new MembrosModel();
@@ -80,6 +83,7 @@ class MembrosController {
      */
     public function indexAjustes() {
         LoginController::checkAuth();
+        Acl::check('manage_settings');
         $membrosModel = new MembrosModel();
         
         $congregacoes = $membrosModel->listarLookup('congregacao');
@@ -91,6 +95,7 @@ class MembrosController {
 
     public function salvarAjuste() {
         LoginController::checkAuth();
+        Acl::check('manage_settings');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $membrosModel = new MembrosModel();
             $tabela = $_POST['tabela'];
@@ -111,6 +116,7 @@ class MembrosController {
 
     public function excluirAjuste() {
         LoginController::checkAuth();
+        Acl::check('manage_settings');
         if (isset($_GET['id']) && isset($_GET['tabela'])) {
             $membrosModel = new MembrosModel();
             $membrosModel->excluirLookup($_GET['tabela'], $_GET['id']);
@@ -121,6 +127,7 @@ class MembrosController {
 
     public function resolverConflito() {
         LoginController::checkAuth();
+        Acl::check('manage_membros');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $membrosModel = new MembrosModel();
             $id = $_POST['conflito_id'];
@@ -152,6 +159,7 @@ class MembrosController {
 
     public function atualizarCongregacaoPorNome() {
         LoginController::checkAuth();
+        Acl::check('manage_membros');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);

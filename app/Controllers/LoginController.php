@@ -41,11 +41,11 @@ class LoginController
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
-            $email = trim($dados['email'] ?? '');
+            $usuarioInput = trim($dados['usuario'] ?? '');
             $senha = $dados['senha'] ?? '';
             $recaptchaToken = $dados['recaptcha_token'] ?? '';
 
-            if (empty($email) || empty($senha)) {
+            if (empty($usuarioInput) || empty($senha)) {
                 throw new Exception('Preencha todos os campos.');
             }
 
@@ -54,13 +54,13 @@ class LoginController
 
             // ── Buscar usuário ──
             $stmt = $this->db->prepare(
-                'SELECT id, nome, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios WHERE email = :email LIMIT 1'
+                'SELECT id, nome, usuario, email, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios WHERE usuario = :u OR email = :u LIMIT 1'
             );
-            $stmt->execute([':email' => $email]);
+            $stmt->execute([':u' => $usuarioInput]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (!$usuario || !password_verify($senha, $usuario['senha'])) {
-                throw new Exception('E-mail ou senha incorretos.');
+                throw new Exception('Usuário ou senha incorretos.');
             }
 
             // ── Forçar mudança de senha? ──

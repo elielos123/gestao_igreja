@@ -2,6 +2,7 @@
 namespace App\Controllers;
 
 use App\Models\FinanceiroModel;
+use App\Helpers\Acl;
 use Exception;
 
 class FinanceiroController {
@@ -14,14 +15,15 @@ class FinanceiroController {
         $this->model = new FinanceiroModel();
     }
 
-    public function indexEntradas() { require dirname(__DIR__) . '/Views/financeiro/entradas.php'; }
-    public function indexSaidas() { require dirname(__DIR__) . '/Views/financeiro/saidas.php'; }
-    public function indexRelatorios() { require dirname(__DIR__) . '/Views/financeiro/relatorios.php'; }
-    public function indexIncongruencias() { require dirname(__DIR__) . '/Views/financeiro/incongruencias.php'; }
-    public function indexCadastros() { require dirname(__DIR__) . '/Views/financeiro/cadastros.php'; }
-    public function indexBI() { require dirname(__DIR__) . '/Views/financeiro/bi.php'; }
+    public function indexEntradas() { Acl::check('view_financeiro'); require dirname(__DIR__) . '/Views/financeiro/entradas.php'; }
+    public function indexSaidas() { Acl::check('view_financeiro'); require dirname(__DIR__) . '/Views/financeiro/saidas.php'; }
+    public function indexRelatorios() { Acl::check('view_financeiro'); require dirname(__DIR__) . '/Views/financeiro/relatorios.php'; }
+    public function indexIncongruencias() { Acl::check('view_financeiro'); require dirname(__DIR__) . '/Views/financeiro/incongruencias.php'; }
+    public function indexCadastros() { Acl::check('manage_financeiro'); require dirname(__DIR__) . '/Views/financeiro/cadastros.php'; }
+    public function indexBI() { Acl::check('view_reports'); require dirname(__DIR__) . '/Views/financeiro/bi.php'; }
 
     public function dadosBI() {
+        Acl::check('view_reports');
         header('Content-Type: application/json');
         try {
             $tipo  = $_GET['tipo'] ?? 'mensais';
@@ -55,6 +57,7 @@ class FinanceiroController {
     }
 
     public function autocomplete() {
+        Acl::check('view_financeiro');
         header('Content-Type: application/json');
         try {
             $termo = $_GET['termo'] ?? '';
@@ -76,6 +79,7 @@ class FinanceiroController {
      * SALVAR SAÍDA - MAPEAMENTO COM AS COLUNAS ENVIADAS
      */
     public function salvarSaida() {
+        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $inputJSON = file_get_contents('php://input');
@@ -109,6 +113,7 @@ class FinanceiroController {
     }
 
     public function salvarEntrada() {
+        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -122,6 +127,7 @@ class FinanceiroController {
     }
 
     public function salvarEdicao() {
+        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -149,6 +155,7 @@ class FinanceiroController {
     }
 
     public function aceitarIncongruencia() {
+        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -161,6 +168,7 @@ class FinanceiroController {
     }
 
     public function excluirEntrada() {
+        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -170,6 +178,7 @@ class FinanceiroController {
     }
 
     public function excluirSaida() {
+        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -179,6 +188,7 @@ class FinanceiroController {
     }
 
     public function buscarDadosEdicao() {
+        Acl::check('view_financeiro');
         header('Content-Type: application/json');
         $id = intval($_GET['id']);
         $tabela = ($_GET['origem'] === 'Entrada') ? 'entradas' : 'saidas';
@@ -190,6 +200,7 @@ class FinanceiroController {
     }
 
     public function gerarRelatorio() {
+        Acl::check('view_financeiro');
         header('Content-Type: application/json');
         $tipoRelatorio = $_GET['tipo_relatorio'] ?? 'pesquisa';
         $inicio = $_GET['inicio'] ?? ''; $fim = $_GET['fim'] ?? '';
@@ -220,6 +231,7 @@ class FinanceiroController {
     }
 
     public function relatorioSimplificado() {
+        Acl::check('view_financeiro');
         header('Content-Type: application/json');
         try {
             $ini   = $_GET['inicio'] ?? date('Y-01-01');

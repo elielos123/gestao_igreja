@@ -9,9 +9,7 @@ class BackupController {
 
     public function exportar() {
         LoginController::checkAuth();
-        
-        // Apenas nível administrador ou master (ajuste conforme os níveis do seu sistema)
-        // \App\Helpers\Acl::check('manage_settings'); // Caso haja uma permissão específica
+        \App\Helpers\Acl::check('manage_backup');
 
         try {
             $db = (new Database())->getConnection();
@@ -67,6 +65,7 @@ class BackupController {
 
     public function importar() {
         LoginController::checkAuth();
+        \App\Helpers\Acl::check('manage_backup');
         
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['backup_file'])) {

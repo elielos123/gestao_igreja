@@ -17,7 +17,7 @@ class UsuarioController {
     public function index() {
         Acl::check('manage_users');
         
-        $sql = "SELECT u.id, u.nome, u.email, u.nivel, 
+        $sql = "SELECT u.id, u.nome, u.usuario, u.email, u.nivel, 
                 (SELECT GROUP_CONCAT(p.nome SEPARATOR ', ') 
                  FROM papeis p 
                  JOIN usuario_papel up ON p.id = up.papel_id 
@@ -196,11 +196,12 @@ class UsuarioController {
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
             $nome = trim($dados['nome'] ?? '');
+            $usuario = trim($dados['usuario'] ?? '');
             $email = trim($dados['email'] ?? '');
             $senha = $dados['senha'] ?? '';
             $nivel = $dados['nivel'] ?? 'secretario';
 
-            if (empty($nome) || empty($email) || empty($senha)) {
+            if (empty($nome) || empty($usuario) || empty($email) || empty($senha)) {
                 throw new Exception("Preencha todos os campos obrigatórios.");
             }
 
@@ -208,27 +209,115 @@ class UsuarioController {
                 throw new Exception("E-mail inválido.");
             }
 
-            // Verifica se e-mail já existe
-            $stmt = $this->db->prepare("SELECT id FROM usuarios WHERE email = :email");
-            $stmt->execute([':email' => $email]);
+            // Verifica se e-mail ou usuário já existe
+            $stmt = $this->db->prepare("SELECT id FROM usuarios WHERE email = :email OR usuario = :usuario");
+            $stmt->execute([':email' => $email, ':usuario' => $usuario]);
             if ($stmt->fetch()) {
-                throw new Exception("Este e-mail já está cadastrado.");
+                throw new Exception("Este e-mail ou usuário já está cadastrado.");
             }
 
             $senhaHash = password_hash($senha, PASSWORD_DEFAULT);
 
-            $sql = "INSERT INTO usuarios (nome, email, senha, nivel, forçar_mudança_senha) 
-                    VALUES (:nome, :email, :senha, :nivel, 1)";
+            $sql = "INSERT INTO usuarios (nome, usuario, email, senha, nivel, forçar_mudança_senha) 
+                    VALUES (:nome, :usuario, :email, :senha, :nivel, 1)";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
-                ':nome'  => $nome,
-                ':email' => $email,
-                ':senha' => $senhaHash,
-                ':nivel' => $nivel
+                ':nome'    => $nome,
+                ':usuario' => $usuario,
+                ':email'   => $email,
+                ':senha'   => $senhaHash,
+                ':nivel'   => $nivel
             ]);
 
             echo json_encode(['status' => 'success', 'message' => 'Usuário criado com sucesso!']);
         } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+    public function getUsuario() {
+        Acl::check('manage_users');
+        header('Content-Type: application/json');
+        try {
+            $id = $_GET['id'] ?? null;
+            if (!$id) throw new Exception("ID não fornecido.");
+
+            $stmt = $this->db->prepare("SELECT id, nome, usuario, email, nivel FROM usuarios WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) throw new Exception("Usuário não encontrado.");
+            echo json_encode(['status' => 'success', 'data' => $user]);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function atualizarUsuario() {
+        Acl::check('manage_users');
+        header('Content-Type: application/json');
+        try {
+            $dados = json_decode(file_get_contents('php://input'), true);
+            $id = $dados['id'] ?? null;
+            $nome = trim($dados['nome'] ?? '');
+            $usuario = trim($dados['usuario'] ?? '');
+            $email = trim($dados['email'] ?? '');
+            $nivel = $dados['nivel'] ?? '';
+            $senha = $dados['senha'] ?? '';
+
+            if (!$id || empty($nome) || empty($usuario) || empty($email) || empty($nivel)) {
+                throw new Exception("Preencha todos os campos obrigatórios.");
+            }
+
+            // Verifica se e-mail ou usuário já existe em outro ID
+            $stmt = $this->db->prepare("SELECT id FROM usuarios WHERE (email = :email OR usuario = :usuario) AND id != :id");
+            $stmt->execute([':email' => $email, ':usuario' => $usuario, ':id' => $id]);
+            if ($stmt->fetch()) {
+                throw new Exception("Este e-mail ou usuário já está em uso por outro usuário.");
+            }
+
+            $sql = "UPDATE usuarios SET nome = :nome, usuario = :usuario, email = :email, nivel = :nivel";
+            $params = [
+                ':nome'    => $nome,
+                ':usuario' => $usuario,
+                ':email'   => $email,
+                ':nivel'   => $nivel,
+                ':id'      => $id
+            ];
+
+            if (!empty($senha)) {
+                $sql .= ", senha = :senha, forçar_mudança_senha = 1";
+                $params[':senha'] = password_hash($senha, PASSWORD_DEFAULT);
+            }
+
+            $sql .= " WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+
+            echo json_encode(['status' => 'success', 'message' => 'Usuário atualizado com sucesso!']);
+        } catch (Exception $e) {
+            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function excluirUsuario() {
+        Acl::check('manage_users');
+        header('Content-Type: application/json');
+        try {
+            $dados = json_decode(file_get_contents('php://input'), true);
+            $id = $dados['id'] ?? null;
+
+            if (!$id) throw new Exception("ID não fornecido.");
+            if ($id == $_SESSION['usuario_id']) throw new Exception("Você não pode excluir a si mesmo.");
+
+            $this->db->beginTransaction();
+            $this->db->prepare("DELETE FROM usuario_papel WHERE usuario_id = :id")->execute([':id' => $id]);
+            $this->db->prepare("DELETE FROM auth_2fa_pendente WHERE usuario_id = :id")->execute([':id' => $id]);
+            $this->db->prepare("DELETE FROM usuarios WHERE id = :id")->execute([':id' => $id]);
+            $this->db->commit();
+
+            echo json_encode(['status' => 'success', 'message' => 'Usuário excluído com sucesso!']);
+        } catch (Exception $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
             echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
         }
     }
