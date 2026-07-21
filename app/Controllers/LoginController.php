@@ -52,9 +52,9 @@ class LoginController
             // ── reCAPTCHA v3 ──
             $this->verificarRecaptcha($recaptchaToken);
 
-            // ── Buscar usuário pelo 'usuario' (ou 'nome' se preferir, mas 'usuario' é mais seguro e único) ──
+            // ── Buscar usuário pelo 'nome' (já que a coluna usuario não existe online) ──
             $stmt = $this->db->prepare(
-                'SELECT id, nome, email, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios WHERE usuario = :u OR nome = :u LIMIT 1'
+                'SELECT id, nome, email, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios WHERE nome = :u LIMIT 1'
             );
             $stmt->execute([':u' => $username]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
