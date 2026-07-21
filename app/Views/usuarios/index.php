@@ -121,7 +121,6 @@
             <thead>
                 <tr>
                     <th>Nome</th>
-                    <th>Usuário</th>
                     <th>E-mail</th>
                     <th>Nível</th>
                     <th>Papéis</th>
@@ -132,22 +131,13 @@
                 <?php foreach ($usuarios as $u): ?>
                     <tr>
                         <td><?= htmlspecialchars($u['nome']) ?></td>
-                        <td><?= htmlspecialchars($u['usuario']) ?></td>
                         <td><?= htmlspecialchars($u['email']) ?></td>
                         <td><?= $u['nivel'] ?></td>
                         <td><small><?= htmlspecialchars($u['papeis_nomes'] ?: 'Nenhum') ?></small></td>
                         <td>
-                            <div style="display: flex; gap: 5px;">
-                                <button class="btn btn-primary btn-sm" onclick="openRolesModal(<?= $u['id'] ?>, '<?= $u['nome'] ?>')" title="Editar Papéis">
-                                    🔑
-                                </button>
-                                <button class="btn btn-secondary btn-sm" onclick="openEditUserModal(<?= $u['id'] ?>)" title="Editar Usuário">
-                                    ✏️
-                                </button>
-                                <button class="btn btn-secondary btn-sm" onclick="deleteUser(<?= $u['id'] ?>)" style="background: rgba(231, 76, 60, 0.2);" title="Excluir Usuário">
-                                    🗑️
-                                </button>
-                            </div>
+                            <button class="btn btn-primary btn-sm" onclick="openRolesModal(<?= $u['id'] ?>, '<?= $u['nome'] ?>')">
+                                Editar Papéis
+                            </button>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -155,19 +145,14 @@
         </table>
     </div>
 
-    <!-- Modal Novo/Editar Usuário -->
+    <!-- Modal Novo Usuário -->
     <div id="userModal" class="modal">
         <div class="modal-content">
-            <h2 id="userModalTitle" style="margin-bottom: 20px;">Criar Novo Usuário</h2>
+            <h2 style="margin-bottom: 20px;">Criar Novo Usuário</h2>
             <form id="userForm">
-                <input type="hidden" id="editUserId">
                 <div class="form-group">
                     <label>Nome:</label>
                     <input type="text" id="userNome" required style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:5px;">
-                </div>
-                <div class="form-group">
-                    <label>Usuário (Login):</label>
-                    <input type="text" id="userUsuario" required style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:5px;">
                 </div>
                 <div class="form-group">
                     <label>E-mail:</label>
@@ -183,12 +168,12 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label id="passLabel">Senha Provisória:</label>
-                    <input type="password" id="userSenha" style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:5px;">
-                    <small id="passHint" style="opacity:0.5;">Será solicitado que o usuário mude-a no primeiro acesso.</small>
+                    <label>Senha Provisória:</label>
+                    <input type="password" id="userSenha" required style="width:100%; padding:10px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:white; border-radius:5px;">
+                    <small style="opacity:0.5;">Será solicitado que o usuário mude-a no primeiro acesso.</small>
                 </div>
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button type="submit" id="btnUserSubmit" class="btn btn-success" style="flex:1;">Criar</button>
+                    <button type="submit" class="btn btn-success" style="flex:1;">Criar</button>
                     <button type="button" class="btn btn-secondary" onclick="closeUserModal()" style="flex:1;">Cancelar</button>
                 </div>
             </form>
@@ -224,63 +209,20 @@
         const userModal = document.getElementById('userModal');
         const userForm = document.getElementById('userForm');
 
-        function openCreateUserModal() {
-            document.getElementById('editUserId').value = '';
-            document.getElementById('userModalTitle').innerText = 'Criar Novo Usuário';
-            document.getElementById('btnUserSubmit').innerText = 'Criar';
-            document.getElementById('passLabel').innerText = 'Senha Provisória:';
-            document.getElementById('passHint').innerText = 'Será solicitado que o usuário mude-a no primeiro acesso.';
-            document.getElementById('userSenha').required = true;
-            userForm.reset();
-            userModal.style.display = 'flex';
-        }
-
-        async function openEditUserModal(id) {
-            try {
-                const response = await fetch('index.php?url=usuarios_get&id=' + id);
-                const res = await response.json();
-                if (res.status === 'success') {
-                    const u = res.data;
-                    document.getElementById('editUserId').value = u.id;
-                    document.getElementById('userNome').value = u.nome;
-                    document.getElementById('userUsuario').value = u.usuario;
-                    document.getElementById('userEmail').value = u.email;
-                    document.getElementById('userNivel').value = u.nivel;
-                    
-                    document.getElementById('userModalTitle').innerText = 'Editar Usuário';
-                    document.getElementById('btnUserSubmit').innerText = 'Salvar Alterações';
-                    document.getElementById('passLabel').innerText = 'Nova Senha (opcional):';
-                    document.getElementById('passHint').innerText = 'Deixe em branco para manter a atual.';
-                    document.getElementById('userSenha').required = false;
-                    document.getElementById('userSenha').value = '';
-
-                    userModal.style.display = 'flex';
-                } else {
-                    alert(res.message);
-                }
-            } catch (err) {
-                alert('Erro ao buscar dados do usuário');
-            }
-        }
-
+        function openCreateUserModal() { userModal.style.display = 'flex'; }
         function closeUserModal() { userModal.style.display = 'none'; }
 
         userForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const id = document.getElementById('editUserId').value;
             const dados = {
-                id: id,
                 nome: document.getElementById('userNome').value,
-                usuario: document.getElementById('userUsuario').value,
                 email: document.getElementById('userEmail').value,
                 nivel: document.getElementById('userNivel').value,
                 senha: document.getElementById('userSenha').value
             };
 
-            const url = id ? 'index.php?url=usuarios_atualizar' : 'index.php?url=usuarios_criar';
-
             try {
-                const response = await fetch(url, {
+                const response = await fetch('index.php?url=usuarios_criar', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dados)
@@ -293,29 +235,9 @@
                     alert(res.message);
                 }
             } catch (err) {
-                alert('Erro ao salvar usuário');
+                alert('Erro ao criar usuário');
             }
         });
-
-        async function deleteUser(id) {
-            if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
-            try {
-                const response = await fetch('index.php?url=usuarios_excluir', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id })
-                });
-                const res = await response.json();
-                if (res.status === 'success') {
-                    alert(res.message);
-                    location.reload();
-                } else {
-                    alert(res.message);
-                }
-            } catch (err) {
-                alert('Erro ao excluir usuário');
-            }
-        }
 
         const modal = document.getElementById('rolesModal');
         const form = document.getElementById('rolesForm');

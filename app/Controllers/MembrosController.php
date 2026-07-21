@@ -3,38 +3,19 @@ namespace App\Controllers;
 
 use App\Models\MembrosModel;
 use App\Models\FinanceiroModel;
-use App\Helpers\Acl;
 
 class MembrosController {
     
+    public function index() {
         LoginController::checkAuth();
-        Acl::check('view_membros');
         
-        // --- SYNC AUTOMÁTICO DE ENTRADAS PARA MEMBROS ---
-        // Pega as pessoas que deram entradas mas não estão na tabela de membros e insere-as automaticamente.
-        try {
-            $db = (new \App\Config\Database())->getConnection();
-            $sqlSync = "INSERT INTO membros (nome, congregacao, status) 
-                        SELECT e1.nome, e1.congregacao, 'Ativo' 
-                        FROM entradas e1
-                        INNER JOIN (
-                            SELECT nome, MAX(id) as max_id FROM entradas GROUP BY nome
-                        ) e2 ON e1.id = e2.max_id
-                        LEFT JOIN membros m ON e1.nome = m.nome 
-                        WHERE m.id IS NULL";
-            $db->exec($sqlSync);
-        } catch (\Exception $e) {
-            // Ignora silenciosamente para não quebrar a página
-        }
-        // ------------------------------------------------
-
         $membrosModel = new MembrosModel();
         $membros = $membrosModel->listarTodos();
         
         // Buscamos as listas de apoio diretamente das tabelas cadastradas
-        $congregacoes = $membrosModel->listarLookup('congregacao');
-        $funcoes = $membrosModel->listarLookup('funcao_eclesiastica');
-        $cargos_cong = $membrosModel->listarLookup('cargo_congregacional');
+        $congregacoes = $membrosModel->listarLookup('congregacoes');
+        $funcoes = $membrosModel->listarLookup('funcoes_eclesiasticas');
+        $cargos_cong = $membrosModel->listarLookup('cargos_congregacionais');
         $conflitos = $membrosModel->listarConflitos();
         
         include_once dirname(__DIR__) . '/Views/membros.php';
@@ -42,7 +23,6 @@ class MembrosController {
 
     public function salvar() {
         LoginController::checkAuth();
-        Acl::check('manage_membros');
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $membrosModel = new MembrosModel();
@@ -61,7 +41,6 @@ class MembrosController {
 
     public function excluir() {
         LoginController::checkAuth();
-        Acl::check('manage_membros');
         
         if (isset($_GET['id'])) {
             $membrosModel = new MembrosModel();
@@ -83,19 +62,17 @@ class MembrosController {
      */
     public function indexAjustes() {
         LoginController::checkAuth();
-        Acl::check('manage_settings');
         $membrosModel = new MembrosModel();
         
-        $congregacoes = $membrosModel->listarLookup('congregacao');
-        $funcoes = $membrosModel->listarLookup('funcao_eclesiastica');
-        $cargos = $membrosModel->listarLookup('cargo_congregacional');
+        $congregacoes = $membrosModel->listarLookup('congregacoes');
+        $funcoes = $membrosModel->listarLookup('funcoes_eclesiasticas');
+        $cargos = $membrosModel->listarLookup('cargos_congregacionais');
         
         include_once dirname(__DIR__) . '/Views/ajustes.php';
     }
 
     public function salvarAjuste() {
         LoginController::checkAuth();
-        Acl::check('manage_settings');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $membrosModel = new MembrosModel();
             $tabela = $_POST['tabela'];
@@ -116,7 +93,6 @@ class MembrosController {
 
     public function excluirAjuste() {
         LoginController::checkAuth();
-        Acl::check('manage_settings');
         if (isset($_GET['id']) && isset($_GET['tabela'])) {
             $membrosModel = new MembrosModel();
             $membrosModel->excluirLookup($_GET['tabela'], $_GET['id']);
@@ -127,7 +103,6 @@ class MembrosController {
 
     public function resolverConflito() {
         LoginController::checkAuth();
-        Acl::check('manage_membros');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $membrosModel = new MembrosModel();
             $id = $_POST['conflito_id'];
@@ -155,30 +130,5 @@ class MembrosController {
             header('Location: index.php?url=membros&status=conflito_resolvido');
             exit;
         }
-    }
-
-    public function atualizarCongregacaoPorNome() {
-        LoginController::checkAuth();
-        Acl::check('manage_membros');
-        header('Content-Type: application/json');
-        try {
-            $dados = json_decode(file_get_contents('php://input'), true);
-            $nome = $dados['nome'] ?? '';
-            $novaCongregacao = $dados['congregacao'] ?? '';
-            
-            if (empty($nome) || empty($novaCongregacao)) {
-                throw new \Exception('Dados incompletos.');
-            }
-            
-            $db = (new \App\Config\Database())->getConnection();
-            $sql = "UPDATE membros SET congregacao = :cong WHERE nome = :nome";
-            $stmt = $db->prepare($sql);
-            $sucesso = $stmt->execute([':cong' => $novaCongregacao, ':nome' => $nome]);
-            
-            echo json_encode(['status' => $sucesso ? 'success' : 'error']);
-        } catch (\Exception $e) {
-            echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
-        }
-        exit;
     }
 }

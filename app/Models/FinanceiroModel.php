@@ -96,23 +96,12 @@ class FinanceiroModel {
 
     public function buscarSugestoes($termo, $campo) {
         if ($campo === 'nome') {
-            // Busca nomes de membros e entradas, e para cada um, tenta achar a congregação do último lançamento
-            $sql = "SELECT DISTINCT 
-                        u.label, 
-                        COALESCE(ult_ent.congregacao, u.cong_cad) as congregacao
-                    FROM (
-                        SELECT nome as label, congregacao as cong_cad FROM membros
-                        UNION
-                        SELECT nome as label, congregacao as cong_cad FROM entradas
-                    ) as u
-                    LEFT JOIN (
-                        SELECT e1.nome, e1.congregacao 
-                        FROM entradas e1
-                        INNER JOIN (
-                            SELECT nome, MAX(id) as max_id FROM entradas GROUP BY nome
-                        ) e2 ON e1.id = e2.max_id
-                    ) as ult_ent ON u.label = ult_ent.nome
-                    WHERE u.label LIKE :termo
+            // Unifica nomes de membros, entradas e recebedores de saídas
+            $sql = "SELECT DISTINCT nome as label, congregacao, '' as extra FROM membros WHERE nome LIKE :termo 
+                    UNION 
+                    SELECT DISTINCT nome as label, congregacao, '' as extra FROM entradas WHERE nome LIKE :termo 
+                    UNION 
+                    SELECT DISTINCT recebedor as label, '' as congregacao, dados_cadastrais as extra FROM saidas WHERE recebedor LIKE :termo 
                     LIMIT 15";
         } elseif ($campo === 'recebedor') {
             // Busca recebedores e seus dados cadastrais
@@ -120,9 +109,6 @@ class FinanceiroModel {
         } elseif ($campo === 'dados_cadastrais') {
             // Busca dados cadastrais e seus recebedores
             $sql = "SELECT DISTINCT dados_cadastrais as label, recebedor as extra FROM saidas WHERE dados_cadastrais LIKE :termo AND dados_cadastrais <> '' LIMIT 15";
-        } elseif ($campo === 'descricao') {
-            // Busca descrições únicas de saídas
-            $sql = "SELECT DISTINCT descricao as label, '' as extra FROM saidas WHERE descricao LIKE :termo AND descricao <> '' LIMIT 15";
         } else {
             $sql = "SELECT DISTINCT $campo as label, '' as extra FROM entradas WHERE $campo LIKE :termo 
                     UNION 
@@ -382,45 +368,5 @@ class FinanceiroModel {
         $stmt = $this->conn->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    /**
-     * Relatório de Movimentações por Data de Registro (Criação)
-     */
-    public function buscarMovimentacoesPorDataCriacao($inicio, $fim) {
-        $sql = "SELECT id, origem, principal, data_movimento, valor, info_extra, categoria, data_criacao,
-                       COUNT(*) OVER (PARTITION BY data_criacao) as num_mesmo_tempo
-                FROM (
-                    SELECT id, 'Entrada' as origem, nome as principal, data as data_movimento, valor, 
-                           congregacao as info_extra, tipo as categoria, data_criacao
-                    FROM entradas 
-                    WHERE DATE(data_criacao) BETWEEN :inicio AND :fim
-                    
-                    UNION ALL
-                    
-                    SELECT id, 'Saída' as origem, recebedor as principal, data as data_movimento, valor, 
-                           descricao as info_extra, tipo_saida as categoria, data_criacao
-                    FROM saidas 
-                    WHERE DATE(data_criacao) BETWEEN :inicio AND :fim
-                ) as mov
-                ORDER BY data_criacao DESC, id DESC";
-        
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([':inicio' => $inicio, ':fim' => $fim]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    /**
-     * Busca totais por congregação dos últimos 4 meses (atual + 3 anteriores)
-     */
-    public function buscarComparativoMensal() {
-        $sql = "SELECT congregacao, 
-                       DATE_FORMAT(data, '%Y-%m') as mes, 
-                       SUM(valor) as total
-                FROM entradas
-                WHERE data >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 3 MONTH), '%Y-%m-01')
-                  AND congregacao IS NOT NULL AND congregacao <> ''
-                GROUP BY congregacao, mes
-                ORDER BY congregacao ASC, mes ASC";
-        return $this->conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 }

@@ -9,10 +9,8 @@
  * 2. Altere as configurações abaixo com suas credenciais
  */
 
-namespace App\Config;
-
-use PDO;
-use PDOException;
+// Se estiver usando namespaces no futuro, descomente a linha abaixo:
+// namespace App\Config;
 
 class Database {
     

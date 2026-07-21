@@ -2,7 +2,6 @@
 namespace App\Controllers;
 
 use App\Models\FinanceiroModel;
-use App\Helpers\Acl;
 use Exception;
 
 class FinanceiroController {
@@ -15,15 +14,14 @@ class FinanceiroController {
         $this->model = new FinanceiroModel();
     }
 
-    public function indexEntradas() { Acl::check('view_financeiro'); require dirname(__DIR__) . '/Views/financeiro/entradas.php'; }
-    public function indexSaidas() { Acl::check('view_financeiro'); require dirname(__DIR__) . '/Views/financeiro/saidas.php'; }
-    public function indexRelatorios() { Acl::check('view_financeiro'); require dirname(__DIR__) . '/Views/financeiro/relatorios.php'; }
-    public function indexIncongruencias() { Acl::check('view_financeiro'); require dirname(__DIR__) . '/Views/financeiro/incongruencias.php'; }
-    public function indexCadastros() { Acl::check('manage_financeiro'); require dirname(__DIR__) . '/Views/financeiro/cadastros.php'; }
-    public function indexBI() { Acl::check('view_reports'); require dirname(__DIR__) . '/Views/financeiro/bi.php'; }
+    public function indexEntradas() { require dirname(__DIR__) . '/Views/financeiro/entradas.php'; }
+    public function indexSaidas() { require dirname(__DIR__) . '/Views/financeiro/saidas.php'; }
+    public function indexRelatorios() { require dirname(__DIR__) . '/Views/financeiro/relatorios.php'; }
+    public function indexIncongruencias() { require dirname(__DIR__) . '/Views/financeiro/incongruencias.php'; }
+    public function indexCadastros() { require dirname(__DIR__) . '/Views/financeiro/cadastros.php'; }
+    public function indexBI() { require dirname(__DIR__) . '/Views/financeiro/bi.php'; }
 
     public function dadosBI() {
-        Acl::check('view_reports');
         header('Content-Type: application/json');
         try {
             $tipo  = $_GET['tipo'] ?? 'mensais';
@@ -57,7 +55,6 @@ class FinanceiroController {
     }
 
     public function autocomplete() {
-        Acl::check('view_financeiro');
         header('Content-Type: application/json');
         try {
             $termo = $_GET['termo'] ?? '';
@@ -65,7 +62,7 @@ class FinanceiroController {
             
             $sugestoes = $this->model->buscarSugestoes($termo, $campo);
             
-            if ($campo === 'nome' || $campo === 'recebedor' || $campo === 'dados_cadastrais' || $campo === 'descricao') {
+            if ($campo === 'nome' || $campo === 'recebedor' || $campo === 'dados_cadastrais') {
                 // Retorna o objeto completo (label, extra, etc)
                 echo json_encode($sugestoes);
             } else {
@@ -79,7 +76,6 @@ class FinanceiroController {
      * SALVAR SAÍDA - MAPEAMENTO COM AS COLUNAS ENVIADAS
      */
     public function salvarSaida() {
-        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $inputJSON = file_get_contents('php://input');
@@ -113,7 +109,6 @@ class FinanceiroController {
     }
 
     public function salvarEntrada() {
-        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -127,7 +122,6 @@ class FinanceiroController {
     }
 
     public function salvarEdicao() {
-        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -155,7 +149,6 @@ class FinanceiroController {
     }
 
     public function aceitarIncongruencia() {
-        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -168,7 +161,6 @@ class FinanceiroController {
     }
 
     public function excluirEntrada() {
-        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -178,7 +170,6 @@ class FinanceiroController {
     }
 
     public function excluirSaida() {
-        Acl::check('manage_financeiro');
         header('Content-Type: application/json');
         try {
             $dados = json_decode(file_get_contents('php://input'), true);
@@ -188,7 +179,6 @@ class FinanceiroController {
     }
 
     public function buscarDadosEdicao() {
-        Acl::check('view_financeiro');
         header('Content-Type: application/json');
         $id = intval($_GET['id']);
         $tabela = ($_GET['origem'] === 'Entrada') ? 'entradas' : 'saidas';
@@ -200,7 +190,6 @@ class FinanceiroController {
     }
 
     public function gerarRelatorio() {
-        Acl::check('view_financeiro');
         header('Content-Type: application/json');
         $tipoRelatorio = $_GET['tipo_relatorio'] ?? 'pesquisa';
         $inicio = $_GET['inicio'] ?? ''; $fim = $_GET['fim'] ?? '';
@@ -221,9 +210,6 @@ class FinanceiroController {
                 $balanco[$mesRef]['saldo'] = $balanco[$mesRef]['entradas'] - $balanco[$mesRef]['saidas'];
             }
             echo json_encode(['status' => 'success', 'dados' => array_values($balanco)]);
-        } elseif ($tipoRelatorio === 'entradas_por_data') {
-            $dados = $this->model->buscarMovimentacoesPorDataCriacao($inicio, $fim);
-            echo json_encode(['status' => 'success', 'dados' => $dados]);
         } else {
             $dados = $this->model->pesquisarRelatorio($inicio, $fim, $_GET['nome']??'', $_GET['filtro_tipo']??'ambos', $_GET['ordem']??'data', $_GET['congregacao']??'todas');
             echo json_encode(['status' => 'success', 'dados' => $dados]);
@@ -231,7 +217,6 @@ class FinanceiroController {
     }
 
     public function relatorioSimplificado() {
-        Acl::check('view_financeiro');
         header('Content-Type: application/json');
         try {
             $ini   = $_GET['inicio'] ?? date('Y-01-01');
@@ -255,110 +240,6 @@ class FinanceiroController {
         echo json_encode(['status' => 'success', 'dados' => $lista]);
     }
 
-
-    public function exportarTxt() {
-        Acl::check('view_financeiro');
-        $modo = $_GET['modo'] ?? 'completo';
-        $inicio = $_GET['inicio'] ?? '';
-        $fim = $_GET['fim'] ?? '';
-        $nome = $_GET['nome'] ?? '';
-        $congregacao = $_GET['congregacao'] ?? 'todas';
-
-        $dados = [];
-        if ($modo !== 'comparativo_mensal') {
-            $dados = $this->model->pesquisarRelatorio($inicio, $fim, $nome, 'entradas', 'congregacao', $congregacao);
-        }
-
-        $txt = "RELATÓRIO FINANCEIRO - MODO: " . strtoupper(str_replace('_', ' ', $modo)) . "\n";
-        $txt .= "Período: " . ($inicio ? date('d/m/Y', strtotime($inicio)) : 'Início') . " até " . ($fim ? date('d/m/Y', strtotime($fim)) : 'Fim') . "\n";
-        $txt .= str_repeat("-", 60) . "\n\n";
-
-        $totalGeral = 0;
-
-        if ($modo === 'completo') {
-            $porCongregacao = [];
-            foreach ($dados as $d) {
-                $porCongregacao[$d['info_extra']][] = $d;
-                $totalGeral += (float)$d['valor'];
-            }
-            foreach ($porCongregacao as $cong => $movs) {
-                $txt .= "CONGREGAÇÃO: " . strtoupper($cong) . "\n";
-                $subTotal = 0;
-                foreach ($movs as $m) {
-                    $txt .= sprintf("  %-30s | R$ %10.2f\n", $m['principal'], $m['valor']);
-                    $subTotal += (float)$m['valor'];
-                }
-                $txt .= "  " . str_repeat("-", 45) . "\n";
-                $txt .= sprintf("  SUBTOTAL %-21s | R$ %10.2f\n\n", $cong, $subTotal);
-            }
-            $txt .= str_repeat("=", 60) . "\n";
-            $txt .= sprintf("TOTAL GERAL: %44s R$ %10.2f\n", "", $totalGeral);
-
-        } elseif ($modo === 'total_congregacional') {
-            $totais = [];
-            foreach ($dados as $d) {
-                if (!isset($totais[$d['info_extra']])) $totais[$d['info_extra']] = 0;
-                $totais[$d['info_extra']] += (float)$d['valor'];
-                $totalGeral += (float)$d['valor'];
-            }
-            foreach ($totais as $cong => $total) {
-                $txt .= sprintf("%-45s | R$ %10.2f\n", strtoupper($cong), $total);
-            }
-            $txt .= str_repeat("=", 60) . "\n";
-            $txt .= sprintf("TOTAL GERAL: %44s R$ %10.2f\n", "", $totalGeral);
-
-        } elseif ($modo === 'dizimistas') {
-            $porCongregacao = [];
-            foreach ($dados as $d) {
-                $porCongregacao[$d['info_extra']][] = $d['principal'];
-            }
-            foreach ($porCongregacao as $cong => $nomes) {
-                $txt .= "CONGREGAÇÃO: " . strtoupper($cong) . "\n";
-                $nomes = array_unique($nomes);
-                sort($nomes);
-                foreach ($nomes as $n) {
-                    $txt .= "  - " . $n . "\n";
-                }
-                $txt .= "\n";
-            }
-
-        } elseif ($modo === 'comparativo_mensal') {
-            $dadosComp = $this->model->buscarComparativoMensal();
-            $meses = [];
-            $grid = [];
-            foreach ($dadosComp as $d) {
-                $meses[$d['mes']] = true;
-                $grid[$d['congregacao']][$d['mes']] = (float)$d['total'];
-            }
-            $mesesSorted = array_keys($meses);
-            sort($mesesSorted);
-
-            $txt .= sprintf("%-25s", "CONGREGAÇÃO");
-            foreach ($mesesSorted as $m) { $txt .= sprintf(" | %10s", $m); }
-            $txt .= "\n" . str_repeat("-", 25 + (count($mesesSorted) * 13)) . "\n";
-
-            $totaisMes = array_fill_keys($mesesSorted, 0);
-            foreach ($grid as $cong => $valores) {
-                $txt .= sprintf("%-25s", strtoupper(substr($cong, 0, 25)));
-                foreach ($mesesSorted as $m) {
-                    $v = $valores[$m] ?? 0;
-                    $txt .= sprintf(" | %10.2f", $v);
-                    $totaisMes[$m] += $v;
-                    $totalGeral += $v;
-                }
-                $txt .= "\n";
-            }
-            $txt .= str_repeat("=", 25 + (count($mesesSorted) * 13)) . "\n";
-            $txt .= sprintf("%-25s", "TOTAL GERAL");
-            foreach ($mesesSorted as $m) { $txt .= sprintf(" | %10.2f", $totaisMes[$m]); }
-            $txt .= "\n";
-        }
-
-        header('Content-Type: text/plain; charset=utf-8');
-        header('Content-Disposition: attachment; filename="relatorio_' . $modo . '_' . date('Ymd_His') . '.txt"');
-        echo $txt;
-        exit;
-    }
 
     private function limparValor($v) {
         $v = preg_replace('/[^0-9,]/', '', $v);

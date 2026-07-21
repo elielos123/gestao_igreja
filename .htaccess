@@ -1,14 +1,14 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
+RewriteEngine On
 
-    # 1. Se o arquivo ou pasta existir na raiz (como a pasta public), não faz nada
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
+# 1. Redireciona a raiz para a pasta /public/ automaticamente
+RewriteRule ^$ public/index.php [L]
 
-    # 2. Se pedir CSS, JS ou IMG, busca dentro da pasta public
-    RewriteRule ^(css|js|img|fonts|assets)/(.*)$ public/$1/$2 [L]
+# 2. Se o usuário digitar algo na URL, verifica se existe na pasta /public/
+RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+RewriteRule ^(.*)$ public/$1 [L]
 
-    # 3. Todo o resto vai para o index.php da public
-    RewriteRule ^((?!public/).*)$ public/index.php?url=$1 [QSA,L]
-</IfModule>
+# 3. Se não existir o arquivo físico, manda para o index.php processar a rota
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ public/index.php?url=$1 [QSA,L]

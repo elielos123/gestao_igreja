@@ -6,108 +6,69 @@
 
 header('Content-Type: text/html; charset=utf-8');
 
-// --- ATIVAR EXIBIÇÃO DE ERROS (LOCAL) ---
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 require_once dirname(__DIR__) . '/vendor/autoload.php';
-
-// --- SUPORTE A HTTPS VIA PROXY (Cloudflare, etc) ---
-if (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' || 
-    strpos(($_SERVER['HTTP_CF_VISITOR'] ?? ''), 'https') !== false ||
-    ($_SERVER['SERVER_PORT'] ?? '') == 443 ||
-    ($_SERVER['HTTP_HOST'] ?? '') !== 'localhost') {
-    $_SERVER['HTTPS'] = 'on';
-}
-
-// --- LOGIN AUTOMÁTICO (DESENVOLVIMENTO LOCAL) ---
-// Se estiver no localhost, loga como admin automaticamente se não houver sessão
-if (($_SERVER['HTTP_HOST'] ?? '') === 'localhost' || ($_SERVER['HTTP_HOST'] ?? '') === '127.0.0.1') {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    if (!isset($_SESSION['usuario_id'])) {
-        $db = (new \App\Config\Database())->getConnection();
-        $stmt = $db->prepare("SELECT id, nome, nivel FROM usuarios WHERE usuario = 'admin' LIMIT 1");
-        $stmt->execute();
-        $admin = $stmt->fetch(\PDO::FETCH_ASSOC);
-        if ($admin) {
-            $_SESSION['usuario_id'] = $admin['id'];
-            $_SESSION['usuario_nome'] = $admin['nome'];
-            $_SESSION['usuario_nivel'] = $admin['nivel'];
-            \App\Helpers\Acl::loadUserPermissions($admin['id']);
-        }
-    }
-}
 
 use Dotenv\Dotenv;
 use App\Controllers\FinanceiroController;
 use App\Controllers\LoginController;
 use App\Controllers\MembrosController;
-use App\Controllers\UsuarioController;
-use App\Controllers\BackupController;
 
-// Carrega as variáveis de ambiente (safeLoad não gera erro se o arquivo .env não existir)
+// Carrega as variáveis de ambiente
 $dotenv = Dotenv::createImmutable(dirname(__DIR__));
-$dotenv->safeLoad();
+$dotenv->load();
 
 $ds = DIRECTORY_SEPARATOR;
 $baseAppPath = dirname(__DIR__) . $ds . 'app';
 
-// --- CAPTURA DE ROTA INTELIGENTE (Compatível com Apache e Nginx) ---
+// --- CAPTURA DE ROTA INTELIGENTE (Para Nginx e Apache) ---
 $requestUri = $_SERVER['REQUEST_URI'];
 $scriptName = $_SERVER['SCRIPT_NAME'];
+$basePath = str_replace('index.php', '', $scriptName);
 
-// 1. Tenta capturar do parâmetro GET (Estilo antigo/Laragon)
-$route = $_GET['url'] ?? '';
+// Remove o caminho base e o index.php da URI para pegar apenas a rota
+$route = str_replace([$basePath, 'index.php'], '', $requestUri);
 
-// 2. Se estiver vazio, tenta capturar da URI (Estilo moderno/Nginx)
-if (empty($route)) {
-    // Pega apenas o caminho da URL (sem query string)
-    $path = parse_url($requestUri, PHP_URL_PATH);
-    
-    // Remove o scriptName (ex: /public/index.php) ou o basePath dele (/public/)
-    $basePath = dirname($scriptName);
-    
-    // Remove as partes fixas da URL para sobrar apenas a rota
-    $route = str_replace([$scriptName, $basePath], '', $path);
-}
+// Remove parâmetros de busca (ex: ?id=1)
+$route = explode('?', $route)[0];
 
-// Limpa barras e higieniza
+// Limpa barras extras nas pontas
 $route = trim($route, '/');
 
-// Se ainda estiver vazia, vai para o dashboard
+// Se a rota estiver vazia, vai para o dashboard
 if (empty($route)) {
     $route = 'dashboard';
 }
 
-// Higienização de segurança
-$route = str_replace(['/', '\\'], '', $route);
+// Higienização de segurança (apenas para o switch interno)
+$cleanRoute = str_replace(['.', '/', '\\'], '', $route);
+// Substituímos o uso da variável $route original na lógica do switch para evitar conflitos
+$route = $cleanRoute;
 
 $viewPath = "";
 
-// --- ROTAS PÚBLICAS (Ignoram checkAuth) ---
-$publicRoutes = ['login', 'autenticar', 'verificar2fa', 'logout', 'validar_senha', 'info', 'diagnostico', 'redir_debug', 'test_headers', 'alterar_senha_view', 'alterar_senha_primeiro_acesso', 'reset_admin', 'init_database', 'install', 'install.php'];
+// --- ROTAS PÚBLICAS ---
+if ($route === 'login') {
+    (new LoginController())->index();
+    exit;
+}
 
-if (in_array($route, $publicRoutes)) {
-    switch ($route) {
-        case 'reset_admin':
-            require_once 'instalar_admin.php';
-            exit;
-        case 'login': (new LoginController())->index(); break;
-        case 'autenticar': (new LoginController())->autenticar(); break;
-        case 'verificar2fa': (new LoginController())->verificar2fa(); break;
-        case 'logout': (new LoginController())->logout(); break;
-        case 'validar_senha': (new LoginController())->validarSenha(); break;
-        case 'info': phpinfo(); break;
-        case 'diagnostico': require 'diagnostico.php'; break;
-        case 'redir_debug': require 'redir_debug.php'; break;
-        case 'test_headers': require 'test_headers.php'; break;
-        case 'init_database': (new LoginController())->initDatabase(); break;
-        case 'install': 
-        case 'install.php':
-            require 'install.php'; 
-            break;
-    }
+if ($route === 'autenticar') {
+    (new LoginController())->autenticar();
+    exit;
+}
+
+if ($route === 'verificar2fa') {
+    (new LoginController())->verificar2fa();
+    exit;
+}
+
+if ($route === 'logout') {
+    (new LoginController())->logout();
+    exit;
+}
+
+if ($route === 'validar_senha') {
+    (new LoginController())->validarSenha();
     exit;
 }
 
@@ -149,10 +110,6 @@ switch ($route) {
 
     case 'membros_resolver_conflito':
         (new MembrosController())->resolverConflito();
-        break;
-
-    case 'membros_atualizar_congregacao':
-        (new MembrosController())->atualizarCongregacaoPorNome();
         break;
 
     case 'financeiro':
@@ -230,10 +187,6 @@ switch ($route) {
         (new FinanceiroController())->salvarEdicao();
         break;
 
-    case 'financeiro_exportar_txt':
-        (new FinanceiroController())->exportarTxt();
-        break;
-
     case 'financeiro_lista_congregacoes':
         (new FinanceiroController())->listarCongregacoes(); 
         break;
@@ -251,21 +204,12 @@ switch ($route) {
         (new MembrosController())->excluirAjuste();
         break;
 
-    // --- BACKUP ---
-    case 'backup_exportar':
-        (new BackupController())->exportar();
-        break;
-
-    case 'backup_importar':
-        (new BackupController())->importar();
-        break;
-
     case 'usuarios':
-        (new UsuarioController())->index();
+        (new \App\Controllers\UsuarioController())->index();
         break;
 
     case 'usuarios_papeis':
-        (new UsuarioController())->papeis();
+        (new \App\Controllers\UsuarioController())->papeis();
         break;
 
     case 'usuarios_criar':
@@ -273,35 +217,23 @@ switch ($route) {
         break;
 
     case 'usuarios_salvar_papeis':
-        (new UsuarioController())->salvarUsuarioPapeis();
+        (new \App\Controllers\UsuarioController())->salvarUsuarioPapeis();
         break;
 
     case 'usuarios_salvar_papel_permissoes':
-        (new UsuarioController())->salvarPapelPermissoes();
+        (new \App\Controllers\UsuarioController())->salvarPapelPermissoes();
         break;
 
     case 'usuarios_criar_papel':
-        (new UsuarioController())->criarPapel();
+        (new \App\Controllers\UsuarioController())->criarPapel();
         break;
 
     case 'usuarios_atualizar_papel':
-        (new UsuarioController())->atualizarPapel();
+        (new \App\Controllers\UsuarioController())->atualizarPapel();
         break;
 
     case 'usuarios_excluir_papel':
-        (new UsuarioController())->excluirPapel();
-        break;
-
-    case 'usuarios_get':
-        (new UsuarioController())->getUsuario();
-        break;
-
-    case 'usuarios_atualizar':
-        (new UsuarioController())->atualizarUsuario();
-        break;
-
-    case 'usuarios_excluir':
-        (new UsuarioController())->excluirUsuario();
+        (new \App\Controllers\UsuarioController())->excluirPapel();
         break;
 
     case 'alterar_senha_view':
@@ -312,6 +244,11 @@ switch ($route) {
         (new LoginController())->alterarSenhaPrimeiroAcesso();
         break;
 
+    case 'logout':
+        session_start();
+        session_destroy();
+        header("Location: index.php?url=login");
+        exit;
         break;
 
     default:

@@ -246,19 +246,6 @@
             </a>
             <?php endif; ?>
 
-            <!-- BACKUP E AJUSTES -->
-            <?php if (\App\Helpers\Acl::canView('manage_users')): // Somente gestores/admins ?>
-            <a href="ajustes" class="menu-card" style="grid-column: span 1;">
-                <div class="icon-box">
-                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/></svg>
-                </div>
-                <div class="card-info">
-                    <h3>Backup de Dados</h3>
-                    <p>Exportar e restaurar o sistema</p>
-                </div>
-            </a>
-            <?php endif; ?>
-
         </div>
 
         <a href="logout" class="btn-logout" onclick="return confirm('Deseja realmente sair?')">

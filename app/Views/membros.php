@@ -271,7 +271,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h3>Gerenciar Congregações</h3>
                     <form action="index.php?url=ajustes_salvar" method="POST" style="display:flex; gap:10px;">
-                        <input type="hidden" name="tabela" value="congregacao">
+                        <input type="hidden" name="tabela" value="congregacoes">
                         <input type="text" name="nome" placeholder="Nova congregação..." required style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff;">
                         <button type="submit" class="btn-novo" style="padding:10px 20px;">ADICIONAR</button>
                     </form>
@@ -297,8 +297,8 @@
                                 <td><span class="status-badge" style="background:rgba(255,255,255,0.05)"><?= $qtd ?> membros</span></td>
                                 <td style="text-align:right;">
                                     <button onclick="filtrarPorCongregacao('<?= $item['nome'] ?>')" class="btn-acao" title="Ver Membros" style="border-color:var(--verde-sucesso); color:var(--verde-sucesso); width:auto; padding:0 15px; font-size:0.75rem; font-weight:700;">VER MEMBROS</button>
-                                    <button onclick="abrirEdicaoAux('congregacao', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></button>
-                                    <button onclick="excluirAux('congregacao', <?= $item['id'] ?>)" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg></button>
+                                    <button onclick="abrirEdicaoAux('congregacoes', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></button>
+                                    <button onclick="excluirAux('congregacoes', <?= $item['id'] ?>)" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg></button>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -314,7 +314,7 @@
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h3>Funções Ministeriais (Obreiros)</h3>
                     <form action="index.php?url=ajustes_salvar" method="POST" style="display:flex; gap:10px;">
-                        <input type="hidden" name="tabela" value="funcao_eclesiastica">
+                        <input type="hidden" name="tabela" value="funcoes_eclesiasticas">
                         <input type="text" name="nome" placeholder="Ex: Pastor, Diácono..." required style="padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.2); color:#fff;">
                         <button type="submit" class="btn-novo" style="padding:10px 20px;">ADICIONAR</button>
                     </form>
@@ -340,8 +340,8 @@
                                 <span style="font-size:0.7rem; background:rgba(46, 204, 113, 0.2); padding:2px 8px; border-radius:10px;"><?= count($obreiros) ?> Obreiros</span>
                             </h4>
                             <div style="display:flex; gap:10px;">
-                                <button onclick="abrirEdicaoAux('funcao_eclesiastica', <?= $f['id'] ?>, '<?= htmlspecialchars($f['nome'], ENT_QUOTES) ?>')" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></button>
-                                <button onclick="excluirAux('funcao_eclesiastica', <?= $f['id'] ?>)" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg></button>
+                                <button onclick="abrirEdicaoAux('funcoes_eclesiasticas', <?= $f['id'] ?>, '<?= htmlspecialchars($f['nome'], ENT_QUOTES) ?>')" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></button>
+                                <button onclick="excluirAux('funcoes_eclesiasticas', <?= $f['id'] ?>)" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg></button>
                             </div>
                         </div>
                         
@@ -378,7 +378,7 @@
             <div class="card aux-card">
                 <h3>Cargos Congregacionais (Departamentos)</h3>
                 <form action="index.php?url=ajustes_salvar" method="POST" class="form-aux-add">
-                    <input type="hidden" name="tabela" value="cargo_congregacional">
+                    <input type="hidden" name="tabela" value="cargos_congregacionais">
                     <input type="text" name="nome" placeholder="Ex: Líder de Jovens, Tesoureiro..." required>
                     <button type="submit" class="btn-novo">+</button>
                 </form>
@@ -387,8 +387,8 @@
                     <li class="item-aux">
                         <span><?= htmlspecialchars($item['nome']) ?></span>
                         <div style="display:flex; gap:10px;">
-                            <button onclick="abrirEdicaoAux('cargo_congregacional', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></button>
-                            <button onclick="excluirAux('cargo_congregacional', <?= $item['id'] ?>)" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg></button>
+                            <button onclick="abrirEdicaoAux('cargos_congregacionais', <?= $item['id'] ?>, '<?= htmlspecialchars($item['nome'], ENT_QUOTES) ?>')" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z"/></svg></button>
+                            <button onclick="excluirAux('cargos_congregacionais', <?= $item['id'] ?>)" class="btn-acao"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z"/></svg></button>
                         </div>
                     </li>
                     <?php endforeach; ?>
