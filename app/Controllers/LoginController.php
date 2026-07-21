@@ -40,15 +40,49 @@ class LoginController
     {
         header('Content-Type: application/json');
         try {
-            // ── Buscar usuário administrador automaticamente ──
+            $dados = json_decode(file_get_contents('php://input'), true);
+            $username = trim($dados['usuario'] ?? '');
+            $senha = $dados['senha'] ?? '';
+            $recaptchaToken = $dados['recaptcha_token'] ?? '';
+
+            if (empty($username) || empty($senha)) {
+                throw new Exception('Preencha todos os campos.');
+            }
+
+            // ── reCAPTCHA v3 ──
+            $this->verificarRecaptcha($recaptchaToken);
+
+            // ── Buscar usuário pelo 'usuario' (ou 'nome' se preferir, mas 'usuario' é mais seguro e único) ──
             $stmt = $this->db->prepare(
-                'SELECT id, nome, email, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios LIMIT 1'
+                'SELECT id, nome, email, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios WHERE usuario = :u OR nome = :u LIMIT 1'
             );
-            $stmt->execute();
+            $stmt->execute([':u' => $username]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$usuario) {
-                throw new Exception('Nenhum usuário encontrado no sistema.');
+            // Verifica se achou e se a senha confere
+            if (!$usuario || !password_verify($senha, $usuario['senha'])) {
+                throw new Exception('Usuário ou senha incorretos.');
+            }
+
+            // ── Forçar mudança de senha? ──
+            if ($usuario['forçar_mudança_senha']) {
+                if (session_status() === PHP_SESSION_NONE) session_start();
+                $_SESSION['temp_usuario_id'] = $usuario['id'];
+                echo json_encode(['status' => 'password_change_required']);
+                return;
+            }
+
+            // ── 2FA ativo? ──
+            if ($usuario['totp_ativo'] && $usuario['totp_secret']) {
+                $tempToken = bin2hex(random_bytes(32));
+                $this->db->exec("DELETE FROM auth_2fa_pendente WHERE criado_em < NOW() - INTERVAL 5 MINUTE");
+                $ins = $this->db->prepare(
+                    'INSERT INTO auth_2fa_pendente (token, usuario_id) VALUES (:token, :uid)'
+                );
+                $ins->execute([':token' => $tempToken, ':uid' => $usuario['id']]);
+
+                echo json_encode(['status' => '2fa_required', 'temp_token' => $tempToken]);
+                return;
             }
 
             // ── Sem 2FA: sessão imediata ──

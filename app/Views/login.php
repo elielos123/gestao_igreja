@@ -127,13 +127,21 @@
     <!-- ── STEP 1: email + password ── -->
     <div id="step1">
         <form id="loginForm" novalidate>
-            <!-- Campos ocultos para manter compatibilidade com o script, sem exigir preenchimento -->
-            <input type="hidden" id="email" value="admin@admin.com">
-            <input type="hidden" id="password" value="admin">
-            
-            <p style="text-align: center; margin-bottom: 20px; color: var(--text-muted);">
-                Acesso liberado sem senha. Clique em entrar para acessar o sistema.
-            </p>
+            <div class="form-group">
+                <label for="usuario">Nome / Usuário</label>
+                <input type="text" id="usuario" placeholder="Seu nome ou usuário" autocomplete="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+                <div class="strength-bar-wrap" id="strengthBar" style="display:none">
+                    <div class="strength-seg" id="s1"></div>
+                    <div class="strength-seg" id="s2"></div>
+                    <div class="strength-seg" id="s3"></div>
+                    <div class="strength-seg" id="s4"></div>
+                </div>
+                <div class="strength-hint" id="strengthHint" style="display:none"></div>
+            </div>
             <button type="submit" class="btn-primary" id="btnSubmit">
                 <span id="btnText">Entrar</span>
                 <div class="loader" id="loader"></div>
@@ -225,7 +233,7 @@ loginForm.addEventListener('submit', async (e) => {
     hideAlert();
     setLoading(btnSubmit, loaderEl, btnText, true);
 
-    const email = document.getElementById('email').value.trim();
+    const usuario = document.getElementById('usuario').value.trim();
     const senha = document.getElementById('password').value;
 
     try {
@@ -237,7 +245,7 @@ loginForm.addEventListener('submit', async (e) => {
         const resp = await fetch('index.php?url=autenticar', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({email, senha, recaptcha_token})
+            body: JSON.stringify({usuario, senha, recaptcha_token})
         });
         const data = await resp.json();
 
