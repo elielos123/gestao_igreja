@@ -46,8 +46,8 @@ class Acl {
             session_start();
         }
 
-        // Bypass para usuário administrador
-        if (isset($_SESSION['usuario_nivel']) && $_SESSION['usuario_nivel'] === 'admin') {
+        // Bypass para o primeiro usuário (admin)
+        if (isset($_SESSION['usuario_id']) && $_SESSION['usuario_id'] == 1) {
             return true;
         }
 
