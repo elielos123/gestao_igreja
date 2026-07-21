@@ -127,21 +127,13 @@
     <!-- ── STEP 1: email + password ── -->
     <div id="step1">
         <form id="loginForm" novalidate>
-            <div class="form-group">
-                <label for="email">E-mail</label>
-                <input type="email" id="email" placeholder="seu@email.com" autocomplete="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Senha</label>
-                <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
-                <div class="strength-bar-wrap" id="strengthBar" style="display:none">
-                    <div class="strength-seg" id="s1"></div>
-                    <div class="strength-seg" id="s2"></div>
-                    <div class="strength-seg" id="s3"></div>
-                    <div class="strength-seg" id="s4"></div>
-                </div>
-                <div class="strength-hint" id="strengthHint" style="display:none"></div>
-            </div>
+            <!-- Campos ocultos para manter compatibilidade com o script, sem exigir preenchimento -->
+            <input type="hidden" id="email" value="admin@admin.com">
+            <input type="hidden" id="password" value="admin">
+            
+            <p style="text-align: center; margin-bottom: 20px; color: var(--text-muted);">
+                Acesso liberado sem senha. Clique em entrar para acessar o sistema.
+            </p>
             <button type="submit" class="btn-primary" id="btnSubmit">
                 <span id="btnText">Entrar</span>
                 <div class="loader" id="loader"></div>

