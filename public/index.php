@@ -34,6 +34,11 @@ $route = explode('?', $route)[0];
 // Limpa barras extras nas pontas
 $route = trim($route, '/');
 
+// Se vier via GET ?url=..., usamos ele (compatibilidade com links antigos / iframes)
+if (!empty($_GET['url'])) {
+    $route = $_GET['url'];
+}
+
 // Se a rota estiver vazia, vai para o dashboard
 if (empty($route)) {
     $route = 'dashboard';
